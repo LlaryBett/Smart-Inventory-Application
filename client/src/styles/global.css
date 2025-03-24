@@ -1,0 +1,5 @@
+.blur-background {
+  filter: blur(5px); /* Apply blur effect */
+  pointer-events: none; /* Disable interactions with the blurred content */
+  transition: filter 0.3s ease; /* Smooth transition for blur effect */
+}
