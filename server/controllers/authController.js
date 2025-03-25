@@ -3,7 +3,6 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const emailService = require('../services/emailService');
-const AdminCode = require('../models/AdminCode');
 
 // Generate JWT Token
 const generateToken = (user) => {
@@ -20,8 +19,7 @@ const register = async (req, res) => {
     const { name, email, password, role, adminCode } = req.body;
 
     // Check if the admin security code is valid
-    const isValidAdminCode = await AdminCode.findOne({ code: adminCode });
-    if (!isValidAdminCode) {
+    if (adminCode !== process.env.ADMIN_SECRET_CODE) {
       return res.status(400).json({ message: 'Invalid admin security code' });
     }
 
@@ -31,24 +29,30 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
     // Create the new user
     const newUser = new User({
+      id: `USER-${Date.now()}`, // Ensure ID is generated
       name,
       email,
-      password: hashedPassword,
+      password: password.toString().trim(), // Remove manual hashing
       role,
     });
 
     // Save the user
     await newUser.save();
 
-    // Remove the admin code after successful registration
-    await AdminCode.deleteOne({ code: adminCode });
-
-    res.status(201).json({ message: 'Admin registered successfully' });
+    res.status(201).json({
+      message: 'Admin registered successfully',
+      user: {
+        id: newUser.id,
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        createdAt: newUser.createdAt,
+        status: newUser.status
+      }
+    });
   } catch (error) {
     console.error('Error registering admin:', error);
     res.status(500).json({ message: 'Error registering admin' });
@@ -57,60 +61,53 @@ const register = async (req, res) => {
 
 // Enhanced login handler
 const login = async (req, res) => {
-  const { email, password } = req.body;
-
   try {
-    console.log('Login attempt for:', email);
-    console.log('Password received:', password);
-    
+    const { email, password } = req.body;
+
     const user = await User.findOne({ email });
     if (!user) {
-      console.log('User not found:', email);
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    console.log('Found user:', user.email);
-    console.log('Password comparison:');
-    console.log('Raw password:', password);
-    console.log('Stored hash:', user.password);
-
-    // Use the raw password directly with bcrypt.compare
-    const isMatch = await bcrypt.compare(password, user.password);
-    console.log('Password match:', isMatch);
-
+    const isMatch = await user.matchPassword(password.toString().trim());
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    // Generate token
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { 
+        userId: user._id,
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        isFirstLogin: user.isFirstLogin
+      },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '24h' }
     );
 
-    // Only allow first login for non-admin users
-    const isFirstLogin = user.role !== 'admin' && user.isFirstLogin === true;
-
-    console.log('Login check:', {
-      userId: user.id,
-      role: user.role,
-      isFirstLogin: user.isFirstLogin,
-      allowFirstLogin: isFirstLogin
-    });
+    // Update last login time if not first login
+    if (!user.isFirstLogin) {
+      user.lastLogin = new Date();
+      await user.save();
+    }
 
     res.status(200).json({
       message: 'Login successful',
       token,
-      isFirstLogin,
+      isFirstLogin: user.isFirstLogin,
       user: {
         id: user.id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-      },
+      }
     });
-  } catch (err) {
-    console.error('Login error:', err);
+
+  } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ message: 'Server error during login' });
   }
 };
@@ -128,9 +125,16 @@ const protect = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.id).select('-password');
+    // Change from decoded.id to decoded.userId to match the token structure
+    req.user = await User.findById(decoded.userId).select('-password');
+    
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+    
     next();
   } catch (error) {
+    console.error('Token verification error:', error);
     res.status(401).json({ message: 'Not authorized' });
   }
 };
@@ -173,16 +177,16 @@ const createUser = async (req, res) => {
       }
     }
 
-    // Generate secure temporary password
-    const tempPassword = crypto.randomBytes(12).toString('hex') + 
+    // Generate secure temporary password and ensure it's a string
+    const tempPassword = (crypto.randomBytes(12).toString('hex') + 
                         'A1!' + 
-                        crypto.randomBytes(4).toString('hex');
+                        crypto.randomBytes(4).toString('hex')).toString();
 
     const user = new User({
       id: `USER-${Date.now()}`, // Ensure ID is generated
       name,
       email,
-      password: tempPassword,
+      password: tempPassword, // Remove manual hashing
       role,
       createdBy: req.user._id,
       isFirstLogin: true  // Explicitly set isFirstLogin to true
@@ -226,22 +230,14 @@ const changePassword = async (req, res) => {
       return res.status(401).json({ message: 'No token provided' });
     }
 
-    console.log('Changing password for token:', token); // Debug log
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('Decoded token:', decoded); // Debug log
-
-    // Find user by email instead of id
     const user = await User.findOne({ email: decoded.email });
-    console.log('Found user:', user ? user.email : 'not found'); // Debug log
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Hash new password and update user
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
+    user.password = newPassword.toString().trim(); // Remove manual hashing
     user.isFirstLogin = false;
     await user.save();
 

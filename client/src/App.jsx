@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -17,11 +17,9 @@ import { AuthProvider } from './context/AuthContext';
 
 const App = () => {
   return (
-    <Router>
-      <AuthProvider>
-        <MainLayout />
-      </AuthProvider>
-    </Router>
+    <AuthProvider>
+      <MainLayout />
+    </AuthProvider>
   );
 };
 
@@ -51,7 +49,11 @@ const MainLayout = () => {
               <Users />
             </ProtectedRoute>
           } />
-          <Route path="/products" element={<Products />} />
+          <Route path="/products" element={
+            <ProtectedRoute>
+              <Products />
+            </ProtectedRoute>
+          } />
           <Route path="/sales" element={
             <ProtectedRoute roles={['admin', 'cashier-out']}>
               <Sales />
@@ -73,7 +75,7 @@ const MainLayout = () => {
             </ProtectedRoute>
           } />
           <Route path="/settings" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['admin']}>
               <Settings />
             </ProtectedRoute>
           } />

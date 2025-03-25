@@ -13,7 +13,7 @@ const initialOrder = {
   customerName: '',
   customerEmail: '',
   status: 'pending',
-  items: [],
+  items: 1, // Changed from array to number
   totalAmount: 0,
   createdAt: new Date().toISOString(),
   shippingAddress: '',
@@ -33,7 +33,7 @@ const Orders = () => {
 
   // Calculate metrics
   const totalRevenue = orders.reduce((acc, order) => 
-    order.status !== 'cancelled' ? acc + order.totalAmount : acc, 0);
+    order.status !== 'cancelled' ? acc + (order.totalAmount || 0) : acc, 0);
   const pendingOrders = orders.filter(order => order.status === 'pending').length;
   const completedOrders = orders.filter(order => order.status === 'completed').length;
 
@@ -89,6 +89,14 @@ const Orders = () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       };
+
+      // Add console.log to show payload
+      console.log('Order Payload:', {
+        method: isEditing ? 'PUT' : 'POST',
+        url: isEditing ? `http://localhost:5000/api/orders/${currentOrder.id}` : 'http://localhost:5000/api/orders',
+        headers,
+        body: currentOrder
+      });
 
       if (isEditing) {
         const response = await fetch(`http://localhost:5000/api/orders/${currentOrder.id}`, {
@@ -212,7 +220,7 @@ const Orders = () => {
               <DollarSign className="h-8 w-8 text-green-500" />
               <div className="ml-4">
                 <p className="text-sm text-gray-500">Total Revenue</p>
-                <p className="text-2xl font-bold">${totalRevenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold">ksh {totalRevenue.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -325,10 +333,10 @@ const Orders = () => {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {order.items.length} items
+                  {Array.isArray(order.items) ? order.items.length : order.items} items
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  ${order.totalAmount.toFixed(2)}
+                  ksh {(order.totalAmount || 0).toFixed(2)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {new Date(order.createdAt).toLocaleDateString()}
@@ -357,7 +365,7 @@ const Orders = () => {
       <Modal
         isOpen={isModalOpen}
         onRequestClose={() => setIsModalOpen(false)}
-        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-8 w-full max-w-md"
+        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-8 w-full max-w-md max-h-[80vh] overflow-y-auto"
         overlayClassName="fixed inset-0 bg-black bg-opacity-50"
       >
         <h2 className="text-2xl font-bold mb-6">{isEditing ? 'Edit Order' : 'New Order'}</h2>
@@ -396,6 +404,17 @@ const Orders = () => {
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Number of Items</label>
+              <input
+                type="number"
+                required
+                min="1"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                value={typeof currentOrder.items === 'number' ? currentOrder.items : (Array.isArray(currentOrder.items) ? currentOrder.items.length : 1)}
+                onChange={(e) => setCurrentOrder({ ...currentOrder, items: parseInt(e.target.value) })}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Total Amount</label>

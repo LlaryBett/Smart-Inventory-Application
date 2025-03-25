@@ -1,4 +1,5 @@
 const Order = require('../models/Order');
+const Product = require('../models/Product');
 
 // Get all orders
 exports.getOrders = async (req, res) => {
@@ -48,16 +49,39 @@ exports.getOrderById = async (req, res) => {
 // Create a new order
 exports.createOrder = async (req, res) => {
   try {
-    const orderId = `ORD-${Date.now()}`;
-    const newOrder = new Order({
-      ...req.body,
-      id: orderId,
-      createdAt: new Date().toISOString()
+    const {
+      customerName,
+      customerEmail,
+      status,
+      items,
+      totalAmount,
+      shippingAddress,
+      paymentMethod,
+      notes
+    } = req.body;
+
+    // Validate required fields
+    if (!customerName || !customerEmail || !totalAmount || !shippingAddress) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const order = new Order({
+      customerName,
+      customerEmail,
+      status: status || 'pending',
+      items: items || 1,
+      totalAmount,
+      createdAt: new Date(),
+      shippingAddress,
+      paymentMethod: paymentMethod || 'credit_card',
+      notes: notes || ''
     });
-    const savedOrder = await newOrder.save();
+
+    const savedOrder = await order.save();
     res.status(201).json(savedOrder);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Create order error:', error);
+    res.status(500).json({ message: 'Error creating order' });
   }
 };
 
@@ -66,9 +90,9 @@ exports.updateOrder = async (req, res) => {
   try {
     const { id } = req.params;
     const updatedOrder = await Order.findOneAndUpdate(
-      { id: id }, 
+      { id }, // Changed from { id: id }
       req.body,
-      { new: true }
+      { new: true, runValidators: true }
     );
     if (!updatedOrder) return res.status(404).json({ message: 'Order not found' });
     res.json(updatedOrder);
@@ -81,7 +105,7 @@ exports.updateOrder = async (req, res) => {
 exports.deleteOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const deletedOrder = await Order.findOneAndDelete({ id: id });
+    const deletedOrder = await Order.findOneAndDelete({ id }); // Changed from { id: id }
     if (!deletedOrder) return res.status(404).json({ message: 'Order not found' });
     res.status(204).send();
   } catch (error) {

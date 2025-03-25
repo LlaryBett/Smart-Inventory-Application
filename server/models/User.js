@@ -11,11 +11,12 @@ const userSchema = new mongoose.Schema({
     default: 'other'
   },
   department: { type: String, default: '' },
-  adminCode: { type: String }, // For admin verification
   rememberMe: { type: Boolean, default: false },
   isFirstLogin: { 
     type: Boolean, 
-    default: true // Changed from false to true - all new users should have first login
+    default: function() {
+      return this.role !== 'admin'; // Admins should not have first login flag set to true
+    }
   },
   lastLogin: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
@@ -36,28 +37,23 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Hash password before saving - ensure password is string
+// Pre-save hook to hash the password
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password')) return next(); // Only hash if modified
   
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password.toString(), salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
-// Simplify comparePassword method to use bcrypt directly
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  try {
-    // Compare the raw password with the stored hash
-    return await bcrypt.compare(candidatePassword, this.password);
-  } catch (error) {
-    console.error('Error comparing passwords:', error);
-    throw error;
-  }
+// Method to match password
+userSchema.methods.matchPassword = async function(enteredPassword) {
+  console.log('Entered password:', enteredPassword);
+  console.log('Stored hashed password:', this.password);
+  
+  const result = await bcrypt.compare(enteredPassword, this.password);
+  console.log('Password match result:', result); // Should be true or false
+  return result;
 };
 
 // Add setRolePermissions method to the schema

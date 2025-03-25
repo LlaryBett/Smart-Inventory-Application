@@ -1,7 +1,7 @@
 const Service = require('../models/Service');
 
 // Get all services
-const getServices = async (req, res) => {
+exports.getServices = async (req, res) => {
   try {
     const { searchTerm, category, status } = req.query;
     let query = {};
@@ -42,25 +42,25 @@ const getServices = async (req, res) => {
 };
 
 // Create a new service
-const createService = async (req, res) => {
+exports.createService = async (req, res) => {
   try {
     const serviceData = {
       ...req.body,
-      id: `SRV-${Date.now()}`,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      id: `SRV-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     };
-    
+
     const service = new Service(serviceData);
-    await service.save();
-    res.status(201).json(service);
+    const savedService = await service.save();
+    
+    res.status(201).json(savedService);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Service creation error:', error);
+    res.status(500).json({ message: error.message });
   }
 };
 
 // Update a service
-const updateService = async (req, res) => {
+exports.updateService = async (req, res) => {
   try {
     const { id } = req.params;
     const updatedData = {
@@ -85,7 +85,7 @@ const updateService = async (req, res) => {
 };
 
 // Delete a service
-const deleteService = async (req, res) => {
+exports.deleteService = async (req, res) => {
   try {
     const { id } = req.params;
     const service = await Service.findOneAndDelete({ id });
@@ -101,7 +101,7 @@ const deleteService = async (req, res) => {
 };
 
 // Import services
-const importServices = async (req, res) => {
+exports.importServices = async (req, res) => {
   try {
     const services = req.body;
     const savedServices = await Service.insertMany(
@@ -116,12 +116,4 @@ const importServices = async (req, res) => {
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
-};
-
-module.exports = {
-  getServices,
-  createService,
-  updateService,
-  deleteService,
-  importServices
 };

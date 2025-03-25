@@ -1,16 +1,15 @@
 const express = require('express');
+const { register, login, protect, restrictTo, createUser, changePassword } = require('../controllers/authController');
+
 const router = express.Router();
-const authController = require('../controllers/authController');
 
-// Public routes
-router.post('/register', authController.register);
-router.post('/login', authController.login);
-
-// Change password route - no need for protect middleware since we're using temp token
-router.post('/change-password', authController.changePassword);
+router.post('/register', register);
+router.post('/login', login);
+router.post('/create-user', protect, restrictTo('admin'), createUser);
+router.post('/change-password', protect, changePassword);
 
 // Protected routes
-router.post('/logout', authController.protect, (req, res) => {
+router.post('/logout', protect, (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
 

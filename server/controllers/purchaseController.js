@@ -42,19 +42,28 @@ exports.getPurchases = async (req, res) => {
   }
 };
 
+// Create a new purchase
 exports.createPurchase = async (req, res) => {
   try {
+    // Log incoming payload
+    console.log('Purchase Payload Received:', req.body);
+
     const purchaseData = {
       ...req.body,
-      id: `PUR-${Date.now()}`,
-      totalCost: req.body.quantity * req.body.unitCost
+      // Ensure these fields are set correctly
+      totalCost: req.body.quantity * req.body.unitCost,
+      date: new Date(req.body.date),
+      id: req.body.id || `PO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     };
-    
+
     const purchase = new Purchase(purchaseData);
-    await purchase.save();
-    res.status(201).json(purchase);
+    const savedPurchase = await purchase.save();
+    
+    console.log('Purchase Saved:', savedPurchase);
+    res.status(201).json(savedPurchase);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Purchase creation error:', error);
+    res.status(500).json({ message: error.message });
   }
 };
 

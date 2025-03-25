@@ -240,7 +240,7 @@ const Sales = () => {
               <DollarSign className="h-8 w-8 text-green-500" />
               <div className="ml-4">
                 <p className="text-sm text-gray-500">Total Revenue</p>
-                <p className="text-2xl font-bold">${totalRevenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold">ksh {totalRevenue.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -249,7 +249,7 @@ const Sales = () => {
               <TrendingUp className="h-8 w-8 text-blue-500" />
               <div className="ml-4">
                 <p className="text-sm text-gray-500">Total Profit</p>
-                <p className="text-2xl font-bold">${totalProfit.toFixed(2)}</p>
+                <p className="text-2xl font-bold">ksh {totalProfit.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -259,7 +259,7 @@ const Sales = () => {
               <ArrowUpRight className="h-8 w-8 text-purple-500" />
               <div className="ml-4">
                 <p className="text-sm text-gray-500">Average Ticket</p>
-                <p className="text-2xl font-bold">${averageTicketSize.toFixed(2)}</p>
+                <p className="text-2xl font-bold">ksh {averageTicketSize.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -381,10 +381,10 @@ const Sales = () => {
                   {sale.products[0]?.quantity || 0}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  ${sale.products[0]?.price?.toFixed(2) || '0.00'}
+                  ksh {sale.products[0]?.price?.toFixed(2) || '0.00'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  ${sale.totalAmount?.toFixed(2) || '0.00'}
+                  ksh {sale.totalAmount?.toFixed(2) || '0.00'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
@@ -392,7 +392,7 @@ const Sales = () => {
                       sale.profit >= 0 ? 'text-green-600' : 'text-red-600'
                     }`}
                   >
-                    ${sale.profit?.toFixed(2) || '0.00'}
+                    ksh {sale.profit?.toFixed(2) || '0.00'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -422,7 +422,7 @@ const Sales = () => {
       <Modal
         isOpen={isModalOpen}
         onRequestClose={() => setIsModalOpen(false)}
-        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-8 w-full max-w-md"
+        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-8 w-full max-w-md max-h-[80vh] overflow-y-auto"
         overlayClassName="fixed inset-0 bg-black bg-opacity-50"
       >
         <h2 className="text-2xl font-bold mb-6">{isEditing ? 'Edit Sale' : 'New Sale'}</h2>

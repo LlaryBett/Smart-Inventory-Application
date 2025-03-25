@@ -1,7 +1,9 @@
 const Sale = require('../models/Sale');
+const Order = require('../models/Order');
+const Product = require('../models/Product');
 const { sendLowStockAlert } = require('../utils/emailService');
 
-exports.getDashboardData = async (req, res) => {
+const getDashboardData = async (req, res) => {
   try {
     const { dateRange } = req.query;
 
@@ -32,25 +34,43 @@ exports.getDashboardData = async (req, res) => {
     const netRevenue = totalRevenue - totalExpenses;
     const profitPercentage = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
 
-    // Orders data
+    // Fetch all order statuses with proper counts
+    const orders = await Order.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Convert aggregation result to required format
     const ordersData = {
-      completed: sales.length, // Assuming all fetched sales are completed
-      pending: 0, // Placeholder for pending orders
-      canceled: 0, // Placeholder for canceled orders
+      pending: 0,
+      processing: 0,
+      completed: 0,
+      cancelled: 0
     };
+
+    // Map the aggregated counts to our ordersData object
+    orders.forEach(order => {
+      if (ordersData.hasOwnProperty(order._id)) {
+        ordersData[order._id] = order.count;
+      }
+    });
 
     // Low stock products (quantity < 10)
     const lowStockProducts = [];
     const LOW_STOCK_THRESHOLD = 10;
-    
+
     sales.forEach((sale) => {
       sale.products.forEach((product) => {
         if (product.quantity < LOW_STOCK_THRESHOLD && !product.lowStockNotified) {
-          lowStockProducts.push({ 
-            id: product.product, 
-            name: product.name, 
+          lowStockProducts.push({
+            id: product.product,
+            name: product.name,
             stock: product.quantity,
-            category: product.category 
+            category: product.category,
           });
         }
       });
@@ -59,13 +79,13 @@ exports.getDashboardData = async (req, res) => {
     // Send email alert if there are low stock products
     if (lowStockProducts.length > 0) {
       await sendLowStockAlert(lowStockProducts);
-      
+
       // Update lowStockNotified flag for these products
       await Promise.all(
         sales.map(async (sale) => {
-          const updatedProducts = sale.products.map(product => ({
+          const updatedProducts = sale.products.map((product) => ({
             ...product,
-            lowStockNotified: product.quantity < LOW_STOCK_THRESHOLD ? true : product.lowStockNotified
+            lowStockNotified: product.quantity < LOW_STOCK_THRESHOLD ? true : product.lowStockNotified,
           }));
           await Sale.findByIdAndUpdate(sale._id, { products: updatedProducts });
         })
@@ -79,16 +99,19 @@ exports.getDashboardData = async (req, res) => {
       amount: sale.totalAmount,
     }));
 
+    // Replace the salesData aggregation with direct mapping
+    const salesData = sales.map((sale) => ({
+      date: sale.date.toISOString().split('T')[0],
+      amount: sale.totalAmount,
+    }));
+
     // Prepare response
     const response = {
-      salesData: sales.map((sale) => ({
-        date: sale.date.toISOString().split('T')[0],
-        amount: sale.totalAmount,
-      })),
+      salesData,
       ordersData,
       expensesData: {
         totalExpenses,
-        lossPercentage,
+        lossPercentage: totalExpenses > 0 ? (totalExpenses / totalRevenue) * 100 : 0,
         loss: totalExpenses,
       },
       revenueData: {
@@ -103,7 +126,15 @@ exports.getDashboardData = async (req, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error('Error fetching dashboard data:', error.message);
-    res.status(500).json({ message: 'Failed to fetch dashboard data.' });
+    console.error('Dashboard data error:', error);
+    res.status(500).json({ 
+      message: 'Error fetching dashboard data',
+      error: error.message 
+    });
   }
 };
+
+module.exports = {
+  getDashboardData
+};
+

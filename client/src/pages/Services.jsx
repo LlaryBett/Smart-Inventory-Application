@@ -10,47 +10,38 @@ import {
   BarChart3,
   X,
   Save,
-  Filter
+  Filter,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import 'react-toastify/dist/ReactToastify.css';
 
 Modal.setAppElement('#root');
 
-const initialServices = [
-  {
-    id: '1',
-    name: 'Web Development',
-    price: 1000,
-    category: 'Development',
-    description: 'Full-stack web development services',
-    requestCount: 15,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    name: 'UI/UX Design',
-    price: 800,
-    category: 'Design',
-    description: 'User interface and experience design',
-    requestCount: 10,
-    createdAt: new Date().toISOString()
-  }
-];
+const initialService = {
+  name: '',
+  price: 0,
+  category: '',
+  description: ''
+};
 
 const Services = () => {
-  const [services, setServices] = useState(initialServices);
+  const [services, setServices] = useState([]);
+  const [metrics, setMetrics] = useState({
+    totalServices: 0,
+    activeServices: 0,
+    averagePrice: 0,
+    totalRevenuePotential: 0
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [priceRange, setPriceRange] = useState({ min: 0, max: 10000 });
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [newService, setNewService] = useState({
-    name: '',
-    price: 0,
-    category: '',
-    description: ''
-  });
+  const [newService, setNewService] = useState(initialService);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [editingService, setEditingService] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const categories = Array.from(new Set(services.map(service => service.category)));
   const totalRevenue = services.reduce((sum, service) => sum + (service.price * service.requestCount), 0);
@@ -75,9 +66,19 @@ const Services = () => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.message);
         
-        setServices(data.services);
+        console.log('API Response:', data); // Debug log
+        console.log('Services array:', data.services); // Debug log
+        
+        if (data.services && Array.isArray(data.services)) {
+          setServices(data.services);
+          setMetrics(data.metrics);
+        } else {
+          console.error('Invalid services data:', data);
+          setServices([]);
+        }
         setIsLoading(false);
       } catch (error) {
+        console.error('Fetch error:', error);
         toast.error(error.message);
         setIsLoading(false);
       }
@@ -104,7 +105,7 @@ const Services = () => {
       
       setServices([...services, data]);
       setIsModalOpen(false);
-      setNewService({ name: '', price: 0, category: '', description: '' });
+      setNewService(initialService);
       toast.success('Service added successfully!');
     } catch (error) {
       toast.error(error.message);
@@ -157,6 +158,59 @@ const Services = () => {
       
       setServices(prevServices => [...prevServices, ...result]);
       toast.success('Services imported successfully!');
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleEdit = async (service) => {
+    setEditingService(service);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDelete = async (serviceId) => {
+    if (!window.confirm('Are you sure you want to delete this service?')) return;
+
+    try {
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/services/${serviceId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message);
+      }
+
+      setServices(services.filter(s => s.id !== serviceId));
+      toast.success('Service deleted successfully!');
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleUpdateService = async () => {
+    try {
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/services/${editingService.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(editingService)
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+
+      setServices(services.map(s => s.id === editingService.id ? data : s));
+      setIsEditModalOpen(false);
+      setEditingService(null);
+      toast.success('Service updated successfully!');
     } catch (error) {
       toast.error(error.message);
     }
@@ -253,20 +307,22 @@ const Services = () => {
       {showAnalytics && (
         <div className="mb-8 p-6 bg-white rounded-lg shadow-lg">
           <h2 className="text-xl font-semibold mb-4">Service Analytics</h2>
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-4 gap-6">
             <div className="p-4 bg-blue-50 rounded-lg">
               <h3 className="text-lg font-medium text-blue-800">Total Services</h3>
-              <p className="text-2xl font-bold text-blue-600">{services.length}</p>
+              <p className="text-2xl font-bold text-blue-600">{metrics.totalServices}</p>
             </div>
             <div className="p-4 bg-green-50 rounded-lg">
-              <h3 className="text-lg font-medium text-green-800">Total Revenue</h3>
-              <p className="text-2xl font-bold text-green-600">${totalRevenue.toLocaleString()}</p>
+              <h3 className="text-lg font-medium text-green-800">Active Services</h3>
+              <p className="text-2xl font-bold text-green-600">{metrics.activeServices}</p>
             </div>
             <div className="p-4 bg-purple-50 rounded-lg">
-              <h3 className="text-lg font-medium text-purple-800">Most Requested</h3>
-              <p className="text-2xl font-bold text-purple-600">
-                {services.reduce((a, b) => a.requestCount > b.requestCount ? a : b).name}
-              </p>
+              <h3 className="text-lg font-medium text-purple-800">Average Price</h3>
+              <p className="text-2xl font-bold text-purple-600">ksh {metrics.averagePrice.toLocaleString()}</p>
+            </div>
+            <div className="p-4 bg-yellow-50 rounded-lg">
+              <h3 className="text-lg font-medium text-yellow-800">Revenue Potential</h3>
+              <p className="text-2xl font-bold text-yellow-600">ksh {metrics.totalRevenuePotential.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -277,23 +333,51 @@ const Services = () => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requests</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredServices.map((service) => (
-              <tr key={service.id}>
-                <td className="px-6 py-4 whitespace-nowrap">{service.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{service.category}</td>
-                <td className="px-6 py-4 whitespace-nowrap">${service.price}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{service.requestCount}</td>
-                <td className="px-6 py-4">{service.description}</td>
+            {filteredServices.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                  No services found
+                </td>
               </tr>
-            ))}
+            ) : (
+              filteredServices.map((service) => {
+                console.log('Rendering service:', service); // Debug log
+                return (
+                  <tr key={service._id || service.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{service.id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{service.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{service.category}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">ksh {service.price?.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{service.description}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(service)}
+                          className="p-1 text-blue-600 hover:text-blue-800"
+                        >
+                          <Edit className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(service.id)}
+                          className="p-1 text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
@@ -367,6 +451,85 @@ const Services = () => {
             Save Service
           </button>
         </div>
+      </Modal>
+
+      {/* Edit Service Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onRequestClose={() => {
+          setIsEditModalOpen(false);
+          setEditingService(null);
+        }}
+        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-8 w-full max-w-md"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-50"
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Edit Service</h2>
+          <button
+            onClick={() => {
+              setIsEditModalOpen(false);
+              setEditingService(null);
+            }}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        {editingService && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name *
+              </label>
+              <input
+                type="text"
+                value={editingService.name}
+                onChange={(e) => setEditingService({ ...editingService, name: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Price *
+              </label>
+              <input
+                type="number"
+                value={editingService.price}
+                onChange={(e) => setEditingService({ ...editingService, price: Number(e.target.value) })}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category *
+              </label>
+              <input
+                type="text"
+                value={editingService.category}
+                onChange={(e) => setEditingService({ ...editingService, category: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea
+                value={editingService.description}
+                onChange={(e) => setEditingService({ ...editingService, description: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                rows={3}
+              />
+            </div>
+            <button
+              onClick={handleUpdateService}
+              className="w-full flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            >
+              <Save className="w-5 h-5 mr-2" />
+              Update Service
+            </button>
+          </div>
+        )}
       </Modal>
     </div>
   );

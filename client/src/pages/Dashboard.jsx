@@ -9,7 +9,8 @@ const Dashboard = () => {
     ordersData: {
       completed: 0,
       pending: 0,
-      canceled: 0
+      processing: 0,
+      cancelled: 0
     },
     expensesData: {
       totalExpenses: 0,
@@ -31,9 +32,19 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get("/api/dashboard-data", {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        if (!token) {
+          console.error('No token found');
+          return;
+        }
+
+        const response = await axios.get("http://localhost:5000/api/dashboard/dashboard-data", {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
           params: { dateRange },
         });
+        
         setData(response.data);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -58,15 +69,16 @@ const Dashboard = () => {
   };
 
   const ordersChartConfig = {
-    labels: ["Completed", "Pending", "Canceled"],
+    labels: ["Completed", "Pending", "Processing", "Cancelled"],
     datasets: [
       {
         data: [
           data.ordersData?.completed ?? 0,
           data.ordersData?.pending ?? 0,
-          data.ordersData?.canceled ?? 0,
+          data.ordersData?.processing ?? 0,
+          data.ordersData?.cancelled ?? 0,
         ],
-        backgroundColor: ["#4CAF50", "#FFC107", "#F44336"],
+        backgroundColor: ["#4CAF50", "#FFC107", "#2196F3", "#F44336"],
       },
     ],
   };
@@ -94,22 +106,22 @@ const Dashboard = () => {
           <div className="card bg-green-100 p-4 rounded shadow">
             <h3 className="text-lg font-semibold">Total Profits</h3>
             <p className="text-green-500 font-bold text-xl">
-              ↑ {data.revenueData?.profitPercentage ?? 0}% (${data.revenueData?.profit ?? 0})
+              ↑ {data.revenueData?.profitPercentage.toFixed(2) ?? 0}% (ksh.{data.revenueData?.profit.toFixed(2) ?? 0})
             </p>
           </div>
           <div className="card bg-red-100 p-4 rounded shadow">
             <h3 className="text-lg font-semibold">Total Loss</h3>
             <p className="text-red-500 font-bold text-xl">
-              ↓ {data.expensesData?.lossPercentage ?? 0}% (${data.expensesData?.loss ?? 0})
+              ↓ {data.expensesData?.lossPercentage.toFixed(2) ?? 0}% (ksh.{data.expensesData?.loss.toFixed(2) ?? 0})
             </p>
           </div>
           <div className="card bg-blue-100 p-4 rounded shadow">
             <h3 className="text-lg font-semibold">Total Spent</h3>
-            <p className="text-xl">${data.expensesData?.totalExpenses ?? 0}</p>
+            <p className="text-xl">ksh.{data.expensesData?.totalExpenses.toFixed(2) ?? 0}</p>
           </div>
           <div className="card bg-yellow-100 p-4 rounded shadow">
             <h3 className="text-lg font-semibold">Net Revenue</h3>
-            <p className="text-xl">${data.revenueData?.netRevenue ?? 0}</p>
+            <p className="text-xl">Ksh{data.revenueData?.netRevenue.toFixed(2) ?? 0}</p>
           </div>
         </div>
 
@@ -179,7 +191,7 @@ const Dashboard = () => {
                   <tr key={transaction.id}>
                     <td className="px-4 py-2">{transaction.id}</td>
                     <td className="px-4 py-2">{transaction.user}</td>
-                    <td className="px-4 py-2">${transaction.amount}</td>
+                    <td className="px-4 py-2">ksh{transaction.amount}</td>
                   </tr>
                 ))}
             </tbody>

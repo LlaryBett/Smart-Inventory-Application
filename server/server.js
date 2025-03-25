@@ -34,13 +34,32 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB Atlas'))
-  .catch((err) => {
-    console.error('Failed to connect to MongoDB:', err.message);
-    process.exit(1);
+// MongoDB connection with detailed error handling
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000 // 5 second timeout
+})
+.then(() => {
+  console.log('Connected to MongoDB Atlas');
+})
+.catch((err) => {
+  console.error('MongoDB connection error details:', {
+    name: err.name,
+    message: err.message,
+    code: err.code
   });
+  console.log('\nPossible solutions:');
+  console.log('1. Whitelist your IP address in MongoDB Atlas');
+  console.log('2. Check if your MongoDB Atlas username and password are correct');
+  console.log('3. Verify your connection string format');
+  console.log('\nTo whitelist your IP:');
+  console.log('1. Go to MongoDB Atlas dashboard');
+  console.log('2. Click Network Access');
+  console.log('3. Click Add IP Address');
+  console.log('4. Add your current IP or use 0.0.0.0/0 for all IPs (not recommended for production)');
+  process.exit(1);
+});
 
 // Add error handling for MongoDB connection
 mongoose.connection.on('connected', () => {
@@ -69,7 +88,7 @@ process.on('SIGINT', async () => {
 
 // Routes
 app.use('/api/auth', authRoutes); // Authentication routes
-app.use('/api/products', authenticateToken, productRoutes); // Product routes
+app.use('/api/products', productRoutes); // Remove authenticateToken from here since it's in the routes
 app.use('/api/orders', authenticateToken, orderRoutes); // Order routes
 app.use('/api/sales', authenticateToken, salesRoutes); // Sales routes
 app.use('/api/purchases', authenticateToken, purchaseRoutes); // Purchase routes
@@ -77,7 +96,7 @@ app.use('/api/services', serviceRoutes); // Services routes (GET is public)
 app.use('/api/reports', authenticateToken, reportRoutes); // Reports routes
 app.use('/api/users', authenticateToken, userRoutes); // User routes
 app.use('/api/settings', authenticateToken, settingsRoutes); // Settings routes
-app.use('/api/dashboard', authenticateToken, dashboardRoutes); // Add dashboard routes
+app.use('/api/dashboard', dashboardRoutes); // Ensure this is correctly connected
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {

@@ -24,7 +24,6 @@ const initialPurchase = {
   status: 'pending',
   paymentStatus: 'pending', // Changed from 'unpaid' to 'pending'
   paymentMethod: 'bank_transfer',
-  invoiceNumber: '',
   purchasedBy: '', // Add purchasedBy field
   notes: ''
 };
@@ -110,6 +109,17 @@ const Purchases = () => {
         ...currentPurchase,
         totalCost: currentPurchase.quantity * currentPurchase.unitCost
       };
+
+      // Add console.log to show payload
+      console.log('Purchase Payload:', {
+        method: isEditing ? 'PUT' : 'POST',
+        url: isEditing ? `http://localhost:5000/api/purchases/${currentPurchase.id}` : 'http://localhost:5000/api/purchases',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem('token') || localStorage.getItem('token')}`
+        },
+        body: purchaseData
+      });
 
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       const headers = {
@@ -264,7 +274,7 @@ const Purchases = () => {
               <DollarSign className="h-8 w-8 text-red-500" />
               <div className="ml-4">
                 <p className="text-sm text-gray-500">Total Expenses</p>
-                <p className="text-2xl font-bold">${totalExpenses.toFixed(2)}</p>
+                <p className="text-2xl font-bold">ksh {totalExpenses.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -273,7 +283,7 @@ const Purchases = () => {
               <ShoppingBag className="h-8 w-8 text-orange-500" />
               <div className="ml-4">
                 <p className="text-sm text-gray-500">Pending Payments</p>
-                <p className="text-2xl font-bold">${pendingPayments.toFixed(2)}</p>
+                <p className="text-2xl font-bold">ksh {pendingPayments.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -418,10 +428,10 @@ const Purchases = () => {
                   {purchase.quantity}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  ${purchase.unitCost.toFixed(2)}
+                  ksh {purchase.unitCost.toFixed(2)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  ${purchase.totalCost.toFixed(2)}
+                  ksh {purchase.totalCost.toFixed(2)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(purchase.status || 'pending')}`}>
@@ -460,7 +470,7 @@ const Purchases = () => {
       <Modal
         isOpen={isModalOpen}
         onRequestClose={() => setIsModalOpen(false)}
-        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-8 w-full max-w-md"
+        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-8 w-full max-w-md max-h-[80vh] overflow-y-auto"
         overlayClassName="fixed inset-0 bg-black bg-opacity-50"
       >
         <h2 className="text-2xl font-bold mb-6">{isEditing ? 'Edit Purchase' : 'New Purchase'}</h2>
@@ -503,16 +513,6 @@ const Purchases = () => {
                   <option key={supplier} value={supplier}>{supplier}</option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Invoice Number</label>
-              <input
-                type="text"
-                required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                value={currentPurchase.invoiceNumber}
-                onChange={(e) => setCurrentPurchase({ ...currentPurchase, invoiceNumber: e.target.value })}
-              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Quantity</label>

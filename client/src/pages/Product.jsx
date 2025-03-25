@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';  // Add this import
+import { useAuth } from '../context/AuthContext'; // Add this import
 
 const initialProduct = {
   name: '',
@@ -20,6 +21,7 @@ const initialProduct = {
 };
 
 const Products = () => {
+  const { getAuthToken } = useAuth(); // Get auth token function
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,37 +59,74 @@ const Products = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/products', {
+        const token = getAuthToken();
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+
+        const response = await fetch('http://localhost:5000/api/products', {
           headers: {
-            // Remove Authorization header
-          },
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         });
-        setProducts(response.data);
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch products');
+        }
+
+        const data = await response.json();
+        console.log('Fetched products:', data); // Debug log to check received data
+        setProducts(data); // Set the products in state
+        setFilteredProducts(data); // Also set filtered products initially
       } catch (error) {
         console.error('Error fetching products:', error);
-        toast.error('Error fetching products');
+        toast.error('Failed to load products');
       }
     };
-    fetchProducts();
-  }, []);
 
-  // Update handleSubmit to use API
+    fetchProducts();
+  }, [getAuthToken]);
+
+  // Update handleSubmit to handle MongoDB _id
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const token = getAuthToken();
       if (isEditing) {
-        await axios.put(`http://localhost:5000/api/products/${currentProduct._id}`, currentProduct);
-        setProducts(products.map(p => p._id === currentProduct._id ? currentProduct : p));
+        const response = await fetch(`http://localhost:5000/api/products/${currentProduct._id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(currentProduct)
+        });
+        
+        if (!response.ok) throw new Error('Failed to update product');
+        const updatedProduct = await response.json();
+        setProducts(products.map(p => p._id === currentProduct._id ? updatedProduct : p));
         toast.success('Product updated successfully!');
       } else {
-        const response = await axios.post('http://localhost:5000/api/products', currentProduct);
-        setProducts([...products, response.data]);
+        const response = await fetch('http://localhost:5000/api/products', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(currentProduct)
+        });
+        
+        if (!response.ok) throw new Error('Failed to create product');
+        const newProduct = await response.json();
+        setProducts([...products, newProduct]);
         toast.success('Product added successfully!');
       }
       setIsModalOpen(false);
       setCurrentProduct(initialProduct);
       setIsEditing(false);
-    } catch {
+    } catch (error) {
+      console.error('Error saving product:', error);
       toast.error('Error saving product');
     }
   };
@@ -150,7 +189,7 @@ const Products = () => {
               <DollarSign className="h-8 w-8 text-green-500" />
               <div className="ml-4">
                 <p className="text-sm text-gray-500">Total Profit</p>
-                <p className="text-2xl font-bold">${totalProfit.toFixed(2)}</p>
+                <p className="text-2xl font-bold">ksh {totalProfit.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -159,7 +198,7 @@ const Products = () => {
               <Package className="h-8 w-8 text-blue-500" />
               <div className="ml-4">
                 <p className="text-sm text-gray-500">Inventory Value</p>
-                <p className="text-2xl font-bold">${totalInventoryValue.toFixed(2)}</p>
+                <p className="text-2xl font-bold">ksh {totalInventoryValue.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -246,35 +285,51 @@ const Products = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredProducts.map((product) => (
-              <tr key={product._id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                  <div className="text-sm text-gray-500">{product.description}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.category}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.price.toFixed(2)}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.cost.toFixed(2)}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.stock}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  ${((product.price - product.cost) * product.stock).toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => handleEdit(product)}
-                    className="text-indigo-600 hover:text-indigo-900 mr-4"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(product._id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+            {filteredProducts.length > 0 ? (
+              filteredProducts.map((product) => (
+                <tr key={product._id}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                    <div className="text-sm text-gray-500">{product.description || 'No description'}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {product.category}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ksh {Number(product.price).toFixed(2)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ksh {Number(product.cost).toFixed(2)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {product.stock}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ksh {((product.price - product.cost) * product.stock).toFixed(2)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => handleEdit(product)}
+                      className="text-indigo-600 hover:text-indigo-900 mr-4"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(product._id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
+                  No products found
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

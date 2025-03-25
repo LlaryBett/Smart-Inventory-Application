@@ -4,9 +4,6 @@ const { authenticateToken } = require('../middleware/authMiddleware');
 const router = express.Router();
 
 // Protect the route with authentication
-router.use(authenticateToken);
-
-// Analytics route
-router.get('/data', getDashboardData);
+router.get('/dashboard-data', authenticateToken, getDashboardData);
 
 module.exports = router;

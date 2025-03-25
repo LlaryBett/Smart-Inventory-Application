@@ -1,3 +1,4 @@
+import React from 'react';
 import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
@@ -76,7 +77,7 @@ const Login = () => {
           return;
         }
 
-        const response = await fetch("http://localhost:5000/api/register", {
+        const response = await fetch("http://localhost:5000/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -109,21 +110,21 @@ const Login = () => {
 
         console.log('Login response:', data); // Debug log
 
-        // Check if it's a non-admin first login
+        // Check if this is first login and user is not an admin
         if (data.isFirstLogin && data.user.role !== 'admin') {
-          console.log('First time login detected for non-admin user'); // Debug log
+          console.log('First time login detected'); // Debug log
           sessionStorage.setItem('tempToken', data.token);
           setShowPasswordModal(true);
-        } else {
-          // Regular login flow or admin login
-          const storage = form.rememberMe ? localStorage : sessionStorage;
-          storage.setItem('token', data.token);
-          storage.setItem('user', JSON.stringify(data.user));
-          
-          // Navigate to dashboard
-          navigate('/dashboard');
-          toast.success("Successfully logged in!");
+          return; // Stop here - don't store credentials or navigate yet
         }
+
+        // Normal login flow - user has already changed their password or is an admin
+        const storage = form.rememberMe ? localStorage : sessionStorage;
+        storage.setItem('token', data.token);
+        storage.setItem('user', JSON.stringify(data.user));
+        
+        navigate('/dashboard');
+        toast.success("Successfully logged in!");
       } catch (error) {
         toast.error(error.message);
       }
