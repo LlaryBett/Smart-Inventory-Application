@@ -64,7 +64,7 @@ const Products = () => {
           throw new Error('No authentication token found');
         }
 
-        const response = await fetch('http://localhost:5000/api/products', {
+        const response = await fetch('https://smart-inventory-application-1.onrender.com/api/products', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -94,7 +94,7 @@ const Products = () => {
     try {
       const token = getAuthToken();
       if (isEditing) {
-        const response = await fetch(`http://localhost:5000/api/products/${currentProduct._id}`, {
+        const response = await fetch(`https://smart-inventory-application-1.onrender.com/api/products/${currentProduct._id}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -108,7 +108,7 @@ const Products = () => {
         setProducts(products.map(p => p._id === currentProduct._id ? updatedProduct : p));
         toast.success('Product updated successfully!');
       } else {
-        const response = await fetch('http://localhost:5000/api/products', {
+        const response = await fetch('https://smart-inventory-application-1.onrender.com/api/products', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -135,7 +135,7 @@ const Products = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/products/${id}`);
+        await axios.delete(`https://smart-inventory-application-1.onrender.com/api/products/${id}`);
         setProducts(products.filter(p => p._id !== id));
         toast.success('Product deleted successfully!');
       } catch {

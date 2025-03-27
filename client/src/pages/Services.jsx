@@ -44,7 +44,6 @@ const Services = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const categories = Array.from(new Set(services.map(service => service.category)));
-  // Remove totalRevenue calculation as it's now handled by the backend
   
   const filteredServices = services.filter(service => {
     const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -58,7 +57,7 @@ const Services = () => {
     const fetchServices = async () => {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/services', {
+        const response = await fetch('https://smart-inventory-application-1.onrender.com/api/services', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -95,7 +94,7 @@ const Services = () => {
         'Authorization': `Bearer ${token}`
       };
 
-      const response = await fetch('http://localhost:5000/api/services', {
+      const response = await fetch('https://smart-inventory-application-1.onrender.com/api/services', {
         method: 'POST',
         headers,
         body: JSON.stringify(newService)
@@ -115,7 +114,7 @@ const Services = () => {
   const exportToExcel = async () => {
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/services', {
+      const response = await fetch('https://smart-inventory-application-1.onrender.com/api/services', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -145,7 +144,7 @@ const Services = () => {
       const jsonData = utils.sheet_to_json(ws);
       
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/services/import', {
+      const response = await fetch('https://smart-inventory-application-1.onrender.com/api/services/import', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -173,7 +172,7 @@ const Services = () => {
 
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/services/${serviceId}`, {
+      const response = await fetch(`https://smart-inventory-application-1.onrender.com/api/services/${serviceId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -195,7 +194,7 @@ const Services = () => {
   const handleUpdateService = async () => {
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/services/${editingService.id}`, {
+      const response = await fetch(`https://smart-inventory-application-1.onrender.com/api/services/${editingService.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

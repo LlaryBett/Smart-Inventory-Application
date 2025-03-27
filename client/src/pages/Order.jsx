@@ -42,7 +42,7 @@ const Orders = () => {
     const fetchOrders = async () => {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/orders', {
+        const response = await fetch('https://smart-inventory-application-1.onrender.com/api/orders', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -93,13 +93,13 @@ const Orders = () => {
       // Add console.log to show payload
       console.log('Order Payload:', {
         method: isEditing ? 'PUT' : 'POST',
-        url: isEditing ? `http://localhost:5000/api/orders/${currentOrder.id}` : 'http://localhost:5000/api/orders',
+        url: isEditing ? `https://smart-inventory-application-1.onrender.com/api/orders/${currentOrder.id}` : 'https://smart-inventory-application-1.onrender.com/api/orders',
         headers,
         body: currentOrder
       });
 
       if (isEditing) {
-        const response = await fetch(`http://localhost:5000/api/orders/${currentOrder.id}`, {
+        const response = await fetch(`https://smart-inventory-application-1.onrender.com/api/orders/${currentOrder.id}`, {
           method: 'PUT',
           headers,
           body: JSON.stringify(currentOrder)
@@ -110,7 +110,7 @@ const Orders = () => {
         setOrders(orders.map(o => o.id === currentOrder.id ? data : o));
         toast.success('Order updated successfully!');
       } else {
-        const response = await fetch('http://localhost:5000/api/orders', {
+        const response = await fetch('https://smart-inventory-application-1.onrender.com/api/orders', {
           method: 'POST',
           headers,
           body: JSON.stringify(currentOrder)
@@ -134,7 +134,7 @@ const Orders = () => {
     if (window.confirm('Are you sure you want to delete this order?')) {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5000/api/orders/${id}`, {
+        const response = await fetch(`https://smart-inventory-application-1.onrender.com/api/orders/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`

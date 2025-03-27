@@ -46,7 +46,7 @@ const Dashboard = () => {
           return;
         }
 
-        const response = await axios.get("http://localhost:5000/api/dashboard/dashboard-data", {
+        const response = await axios.get("https://smart-inventory-application-1.onrender.com/api/dashboard/dashboard-data", {
           headers: {
             'Authorization': `Bearer ${token}`
           },
@@ -66,7 +66,7 @@ const Dashboard = () => {
     const fetchAnalytics = async () => {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/products/top-performing', {
+        const response = await fetch('https://smart-inventory-application-1.onrender.com/api/products/top-performing', {
           headers: {
             'Authorization': `Bearer ${token}`
           }

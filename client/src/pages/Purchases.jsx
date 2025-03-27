@@ -45,7 +45,7 @@ const Purchases = () => {
     const fetchPurchases = async () => {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/purchases', {
+        const response = await fetch('https://smart-inventory-application-1.onrender.com/api/purchases', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -113,7 +113,7 @@ const Purchases = () => {
       // Add console.log to show payload
       console.log('Purchase Payload:', {
         method: isEditing ? 'PUT' : 'POST',
-        url: isEditing ? `http://localhost:5000/api/purchases/${currentPurchase.id}` : 'http://localhost:5000/api/purchases',
+        url: isEditing ? `https://smart-inventory-application-1.onrender.com/api/purchases/${currentPurchase.id}` : 'https://smart-inventory-application-1.onrender.com/api/purchases',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${sessionStorage.getItem('token') || localStorage.getItem('token')}`
@@ -128,7 +128,7 @@ const Purchases = () => {
       };
 
       if (isEditing) {
-        const response = await fetch(`http://localhost:5000/api/purchases/${currentPurchase.id}`, {
+        const response = await fetch(`https://smart-inventory-application-1.onrender.com/api/purchases/${currentPurchase.id}`, {
           method: 'PUT',
           headers,
           body: JSON.stringify(purchaseData)
@@ -139,7 +139,7 @@ const Purchases = () => {
         setPurchases(purchases.map(p => p.id === currentPurchase.id ? data : p));
         toast.success('Purchase updated successfully!');
       } else {
-        const response = await fetch('http://localhost:5000/api/purchases', {
+        const response = await fetch('https://smart-inventory-application-1.onrender.com/api/purchases', {
           method: 'POST',
           headers,
           body: JSON.stringify(purchaseData)
@@ -162,7 +162,7 @@ const Purchases = () => {
     if (window.confirm('Are you sure you want to delete this purchase?')) {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5000/api/purchases/${id}`, {
+        const response = await fetch(`https://smart-inventory-application-1.onrender.com/api/purchases/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -193,7 +193,7 @@ const Purchases = () => {
           const jsonData = utils.sheet_to_json(worksheet);
           
           const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-          const response = await fetch('http://localhost:5000/api/purchases/import', {
+          const response = await fetch('https://smart-inventory-application-1.onrender.com/api/purchases/import', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

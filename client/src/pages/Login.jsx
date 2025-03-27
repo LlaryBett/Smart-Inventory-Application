@@ -77,7 +77,7 @@ const Login = () => {
           return;
         }
 
-        const response = await fetch("http://localhost:5000/api/auth/register", {
+        const response = await fetch("https://smart-inventory-application-1.onrender.com/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -99,7 +99,7 @@ const Login = () => {
       }
     } else {
       try {
-        const response = await fetch("http://localhost:5000/api/auth/login", {
+        const response = await fetch("https://smart-inventory-application-1.onrender.com/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(form),
@@ -141,7 +141,7 @@ const Login = () => {
 
     try {
       const token = sessionStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/auth/change-password", {
+      const response = await fetch("https://smart-inventory-application-1.onrender.com/api/auth/change-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -176,7 +176,7 @@ const Login = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/auth/change-password', {
+      const response = await fetch('https://smart-inventory-application-1.onrender.com/api/auth/change-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

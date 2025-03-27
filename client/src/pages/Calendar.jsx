@@ -31,7 +31,7 @@ function Calendar() {
     const fetchEvents = async () => {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5000/api/events', {
+        const response = await axios.get('https://smart-inventory-application-1.onrender.com/api/calendar/events', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -87,7 +87,7 @@ function Calendar() {
 
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      const response = await axios.post('http://localhost:5000/api/events/create', 
+      const response = await axios.post('https://smart-inventory-application-1.onrender.com/api/calendar/events', 
         {
           ...newEvent,
           date: selectedDate.toISOString() // Send date in ISO format

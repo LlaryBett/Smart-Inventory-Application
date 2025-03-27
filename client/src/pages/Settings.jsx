@@ -59,7 +59,7 @@ const Settings = () => {
   const fetchSettings = async () => {
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/settings', {
+      const response = await fetch('https://smart-inventory-application-1.onrender.com/api/settings', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -87,7 +87,7 @@ const Settings = () => {
     setIsSaving(true);
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/settings', {
+      const response = await fetch('https://smart-inventory-application-1.onrender.com/api/settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ const Settings = () => {
   const handleBackupData = async () => {
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/settings', {
+      const response = await fetch('https://smart-inventory-application-1.onrender.com/api/settings', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -135,7 +135,7 @@ const Settings = () => {
       const content = await file.text();
       const parsedData = JSON.parse(content);
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/settings', {
+      const response = await fetch('https://smart-inventory-application-1.onrender.com/api/settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

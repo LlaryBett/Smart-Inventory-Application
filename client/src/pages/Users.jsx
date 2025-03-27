@@ -53,7 +53,7 @@ const Users = () => {
           return;
         }
 
-        const response = await axios.get('http://localhost:5000/api/users', {
+        const response = await axios.get('https://smart-inventory-application-1.onrender.com/api/users', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -95,7 +95,7 @@ const Users = () => {
         adminCode: userForm.role === 'admin' ? prompt('Enter admin security code:') : undefined
       };
 
-      const response = await fetch('http://localhost:5000/api/users', {
+      const response = await fetch('https://smart-inventory-application-1.onrender.com/api/users', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -143,7 +143,7 @@ const Users = () => {
     if (userToDelete) {
       try {
         const token = sessionStorage.getItem("token") || localStorage.getItem("token");
-        const response = await fetch(`http://localhost:5000/api/users/${userToDelete.id}`, {
+        const response = await fetch(`https://smart-inventory-application-1.onrender.com/api/users/${userToDelete.id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`

@@ -41,7 +41,7 @@ const Sales = () => {
     const fetchSales = async () => {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/sales', {
+        const response = await fetch('https://smart-inventory-application-1.onrender.com/api/sales', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -66,7 +66,7 @@ const Sales = () => {
     const fetchProducts = async () => {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5000/api/products', {
+        const response = await axios.get('https://smart-inventory-application-1.onrender.com/api/products', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -155,7 +155,7 @@ const Sales = () => {
       };
 
       if (isEditing) {
-        const response = await fetch(`http://localhost:5000/api/sales/${currentSale.id}`, {
+        const response = await fetch(`https://smart-inventory-application-1.onrender.com/api/sales/${currentSale.id}`, {
           method: 'PUT',
           headers,
           body: JSON.stringify(saleData),
@@ -166,7 +166,7 @@ const Sales = () => {
         setSales(sales.map((s) => (s.id === currentSale.id ? data.sale : s))); // Update the edited sale
         toast.success('Sale updated successfully!');
       } else {
-        const response = await fetch('http://localhost:5000/api/sales', {
+        const response = await fetch('https://smart-inventory-application-1.onrender.com/api/sales', {
           method: 'POST',
           headers,
           body: JSON.stringify(saleData),
@@ -174,7 +174,7 @@ const Sales = () => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.message);
 
-        const populatedSale = await fetch(`http://localhost:5000/api/sales/${data.sale.id}`, {
+        const populatedSale = await fetch(`https://smart-inventory-application-1.onrender.com/api/sales/${data.sale.id}`, {
           headers: { 'Authorization': `Bearer ${token}` },
         }).then((res) => res.json()); // Fetch the fully populated sale
 
@@ -193,7 +193,7 @@ const Sales = () => {
     if (window.confirm('Are you sure you want to delete this sale?')) {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5000/api/sales/${id}`, {
+        const response = await fetch(`https://smart-inventory-application-1.onrender.com/api/sales/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -232,7 +232,7 @@ const Sales = () => {
           const jsonData = utils.sheet_to_json(worksheet);
           
           const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-          const response = await fetch('http://localhost:5000/api/sales/import', {
+          const response = await fetch('https://smart-inventory-application-1.onrender.com/api/sales/import', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
