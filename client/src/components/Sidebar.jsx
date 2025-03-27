@@ -18,7 +18,7 @@ const Sidebar = () => {
     });
   };
 
-  const NavItem = ({ to, icon: children }) => (
+  const NavItem = ({ to, icon: Icon, children }) => (
     <NavLink
       to={to}
       onClick={() => setIsMobileMenuOpen(false)}
