@@ -30,9 +30,12 @@ exports.getServices = async (req, res) => {
       activeServices: services.filter(s => s.status === 'active').length,
       averagePrice: services.length > 0 ? 
         services.reduce((acc, s) => acc + s.price, 0) / services.length : 0,
-      totalRevenuePotential: services
-        .filter(s => s.status === 'active')
-        .reduce((acc, s) => acc + s.price, 0)
+      // Calculate total revenue potential (price * maximum possible requests per month)
+      totalRevenuePotential: services.reduce((sum, service) => {
+        // Assuming each service can be requested up to 30 times per month (adjust as needed)
+        const maxRequestsPerMonth = 30;
+        return sum + (service.price * maxRequestsPerMonth);
+      }, 0)
     };
 
     res.json({ services, metrics });

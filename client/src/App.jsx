@@ -14,6 +14,7 @@ import Reports from './pages/Reports';
 import Unauthorized from './pages/Unauthorized'; // Import Unauthorized page
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
+import CalendarPage from './pages/Calendar'; // Import Calendar page
 
 const App = () => {
   return (
@@ -82,6 +83,11 @@ const MainLayout = () => {
           <Route path="/reports" element={
             <ProtectedRoute>
               <Reports />
+            </ProtectedRoute>
+          } />
+          <Route path="/calendar" element={
+            <ProtectedRoute>
+              <CalendarPage />
             </ProtectedRoute>
           } />
         </Routes>

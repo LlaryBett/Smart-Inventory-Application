@@ -10,16 +10,17 @@ import {
 } from 'lucide-react';
 import 'react-toastify/dist/ReactToastify.css';
 import 'react-datepicker/dist/react-datepicker.css';
+import axios from 'axios';
 
 const initialSale = {
   id: '',
   products: [{
-    product: `PROD-${Date.now()}`,
-    quantity: 1,
-    price: 0
+    product: '', // This will hold the product ObjectId
+    quantity: 1
   }],
-  customer: '',
+  customerName: '',
   paymentMethod: 'cash',
+  notes: '',
   date: new Date().toISOString()
 };
 
@@ -33,6 +34,7 @@ const Sales = () => {
   const [currentSale, setCurrentSale] = useState(initialSale);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState([]); // Add products state
 
   // Fetch sales from API
   useEffect(() => {
@@ -46,7 +48,8 @@ const Sales = () => {
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message);
-        
+
+        console.log('Fetched sales data:', data.sales); // Log the sales payload
         setSales(data.sales);
         setIsLoading(false);
       } catch (error) {
@@ -56,6 +59,26 @@ const Sales = () => {
     };
 
     fetchSales();
+  }, []);
+
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const response = await axios.get('http://localhost:5000/api/products', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        setProducts(response.data);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        toast.error('Error fetching products. Please try again.');
+      }
+    };
+
+    fetchProducts();
   }, []);
 
   // Calculate metrics
@@ -69,21 +92,36 @@ const Sales = () => {
     let result = [...sales];
     
     if (searchTerm) {
-      result = result.filter(sale =>
-        sale.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        sale.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        sale.salesPerson.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      result = result.filter(sale => {
+        // Search through product name
+        const productName = sale.products?.[0]?.product?.name?.toLowerCase() || '';
+        
+        // Search through customer name
+        const customerName = sale.customerName?.toLowerCase() || '';
+        
+        // Search through payment method
+        const paymentMethod = sale.paymentMethod?.toLowerCase() || '';
+
+        const searchLower = searchTerm.toLowerCase();
+        
+        return (
+          productName.includes(searchLower) ||
+          customerName.includes(searchLower) ||
+          paymentMethod.includes(searchLower)
+        );
+      });
     }
     
     if (selectedCategory !== 'all') {
-      result = result.filter(sale => sale.category === selectedCategory);
+      result = result.filter(sale => 
+        sale.products?.[0]?.product?.category === selectedCategory
+      );
     }
     
     if (dateRange[0] && dateRange[1]) {
       result = result.filter(sale => {
         const saleDate = new Date(sale.date);
-        return saleDate >= dateRange[0] && dateRange[1];
+        return saleDate >= dateRange[0] && saleDate <= dateRange[1];
       });
     }
     
@@ -93,21 +131,19 @@ const Sales = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Transform to match API format
       const saleData = {
         products: [
           {
-            product: currentSale.productId || `PROD-${Date.now()}`,
-            name: currentSale.productName, // Ensure productName is included
-            quantity: currentSale.quantity,
-            price: currentSale.unitPrice,
-            costPrice: currentSale.costPrice,
-            category: currentSale.category,
+            product: currentSale.products[0].product, // Use the selected product's _id
+            productName: currentSale.products[0].productName,
+            quantity: currentSale.products[0].quantity,
+            unitPrice: currentSale.products[0].unitPrice,
+            costPrice: currentSale.products[0].costPrice,
+            category: currentSale.products[0].category,
           },
         ],
-        customer: currentSale.customerName,
+        customerName: currentSale.customerName,
         paymentMethod: currentSale.paymentMethod,
-        salesPerson: currentSale.salesPerson,
         notes: currentSale.notes,
         date: currentSale.date,
       };
@@ -127,7 +163,7 @@ const Sales = () => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.message);
 
-        setSales(sales.map((s) => (s.id === currentSale.id ? data : s)));
+        setSales(sales.map((s) => (s.id === currentSale.id ? data.sale : s))); // Update the edited sale
         toast.success('Sale updated successfully!');
       } else {
         const response = await fetch('http://localhost:5000/api/sales', {
@@ -138,7 +174,11 @@ const Sales = () => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.message);
 
-        setSales([...sales, data]);
+        const populatedSale = await fetch(`http://localhost:5000/api/sales/${data.sale.id}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        }).then((res) => res.json()); // Fetch the fully populated sale
+
+        setSales([...sales, populatedSale.sale]); // Add the fully populated sale to the state
         toast.success('Sale added successfully!');
       }
       setIsModalOpen(false);
@@ -370,28 +410,30 @@ const Sales = () => {
                   {sale.id}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-bold text-gray-900">{sale.products[0]?.name || 'N/A'}</div>
-                  <div className="text-sm text-gray-500">{sale.products[0]?.category || 'N/A'}</div>
+                  <div className="text-sm font-bold text-gray-900">
+                    {sale.products?.[0]?.product?.name || 'N/A'} {/* Access product name */}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {sale.products?.[0]?.product?.category || 'N/A'} {/* Access category */}
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-bold text-gray-900">{sale.customer}</div>
-                  <div className="text-sm text-gray-500">{sale.paymentMethod}</div>
+                  <div className="text-sm font-bold text-gray-900">
+                    {sale.customerName || sale.customer || 'N/A'} {/* Handle both customerName and customer */}
+                  </div>
+                  <div className="text-sm text-gray-500">{sale.paymentMethod || 'N/A'}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {sale.products[0]?.quantity || 0}
+                  {sale.products?.[0]?.quantity || 0}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  ksh {sale.products[0]?.price?.toFixed(2) || '0.00'}
+                  ksh {sale.products?.[0]?.product?.price?.toFixed(2) || '0.00'} {/* Access unit price */}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   ksh {sale.totalAmount?.toFixed(2) || '0.00'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`text-sm font-medium ${
-                      sale.profit >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}
-                  >
+                  <span className={`text-sm font-medium ${sale.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     ksh {sale.profit?.toFixed(2) || '0.00'}
                   </span>
                 </td>
@@ -428,30 +470,73 @@ const Sales = () => {
         <h2 className="text-2xl font-bold mb-6">{isEditing ? 'Edit Sale' : 'New Sale'}</h2>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
+            {/* Product Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Product Name</label>
-              <input
-                type="text"
-                required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                value={currentSale.productName}
-                onChange={(e) => setCurrentSale({ ...currentSale, productName: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Category</label>
+              <label className="block text-sm font-medium text-gray-700">Select Product</label>
               <select
                 required
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                value={currentSale.category}
-                onChange={(e) => setCurrentSale({ ...currentSale, category: e.target.value })}
+                value={currentSale.products[0]?.product}
+                onChange={(e) => {
+                  const selectedProductId = e.target.value;
+                  const selectedProduct = products.find(p => p._id === selectedProductId);
+                  
+                  // Update currentSale with selected product details
+                  setCurrentSale({
+                    ...currentSale,
+                    products: [{
+                      product: selectedProductId,
+                      productName: selectedProduct.name,
+                      category: selectedProduct.category,
+                      unitPrice: selectedProduct.price,
+                      costPrice: selectedProduct.cost,
+                      quantity: 1 // Reset quantity to 1
+                    }]
+                  });
+                }}
               >
-                <option value="">Select a category</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
+                <option value="">Select a product</option>
+                {products.map(product => (
+                  <option key={product._id} value={product._id}>
+                    {product.name} ({product.category}) - ksh {product.price}
+                  </option>
                 ))}
               </select>
             </div>
+
+            {/* Quantity Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Quantity</label>
+              <input
+                type="number"
+                required
+                min="1"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                value={currentSale.products[0]?.quantity}
+                onChange={(e) => {
+                  setCurrentSale({
+                    ...currentSale,
+                    products: [{
+                      ...currentSale.products[0],
+                      quantity: parseInt(e.target.value)
+                    }]
+                  });
+                }}
+              />
+            </div>
+
+            {/* Display selected product details (read-only) */}
+            {currentSale.products[0]?.product && (
+              <div className="mt-4 p-4 bg-gray-100 rounded-md">
+                <p className="text-sm font-medium text-gray-700">Selected Product Details:</p>
+                <p className="text-sm text-gray-500">Name: {currentSale.products[0].productName}</p>
+                <p className="text-sm text-gray-500">Category: {currentSale.products[0].category}</p>
+                <p className="text-sm text-gray-500">Unit Price: ksh {currentSale.products[0].unitPrice}</p>
+                <p className="text-sm text-gray-500">Cost Price: ksh {currentSale.products[0].costPrice}</p>
+              </div>
+            )}
+
+            {/* Customer Name Input */}
             <div>
               <label className="block text-sm font-medium text-gray-700">Customer Name</label>
               <input
@@ -462,41 +547,8 @@ const Sales = () => {
                 onChange={(e) => setCurrentSale({ ...currentSale, customerName: e.target.value })}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Quantity</label>
-              <input
-                type="number"
-                required
-                min="1"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                value={currentSale.quantity}
-                onChange={(e) => setCurrentSale({ ...currentSale, quantity: parseInt(e.target.value) })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Unit Price</label>
-              <input
-                type="number"
-                required
-                min="0"
-                step="0.01"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                value={currentSale.unitPrice}
-                onChange={(e) => setCurrentSale({ ...currentSale, unitPrice: parseFloat(e.target.value) })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Cost Price</label>
-              <input
-                type="number"
-                required
-                min="0"
-                step="0.01"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                value={currentSale.costPrice}
-                onChange={(e) => setCurrentSale({ ...currentSale, costPrice: parseFloat(e.target.value) })}
-              />
-            </div>
+
+            {/* Payment Method Select */}
             <div>
               <label className="block text-sm font-medium text-gray-700">Payment Method</label>
               <select
@@ -512,16 +564,8 @@ const Sales = () => {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Sales Person</label>
-              <input
-                type="text"
-                required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                value={currentSale.salesPerson}
-                onChange={(e) => setCurrentSale({ ...currentSale, salesPerson: e.target.value })}
-              />
-            </div>
+
+            {/* Notes Textarea */}
             <div>
               <label className="block text-sm font-medium text-gray-700">Notes</label>
               <textarea
@@ -532,6 +576,8 @@ const Sales = () => {
               />
             </div>
           </div>
+
+          {/* Submit and Cancel Buttons */}
           <div className="mt-6 flex justify-end space-x-3">
             <button
               type="button"

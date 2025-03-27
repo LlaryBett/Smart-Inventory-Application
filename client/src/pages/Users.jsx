@@ -1,11 +1,8 @@
 import React, { useState, useContext, useEffect } from 'react';
 import Modal from 'react-modal';
 import { ToastContainer, toast } from 'react-toastify';
-import { 
-  utils, 
-  writeFile,
-  read,
-} from 'xlsx';
+import 'react-toastify/dist/ReactToastify.css';
+import { utils, writeFile, read } from 'xlsx';
 import {
   Users as UsersIcon,
   UserPlus,
@@ -19,7 +16,8 @@ import {
   Shield,
   Building,
   Mail,
-  User
+  User,
+  Menu
 } from 'lucide-react';
 import AuthContext from '../context/AuthContext';
 import axios from 'axios';
@@ -31,6 +29,7 @@ const Users = () => {
   const [selectedRole, setSelectedRole] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
   const [userForm, setUserForm] = useState({
     fullName: '',
     email: '',
@@ -41,7 +40,6 @@ const Users = () => {
   const [userToDelete, setUserToDelete] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isUnauthorizedModalOpen, setIsUnauthorizedModalOpen] = useState(false);
 
   const roles = ['admin', 'cashier_in', 'cashier_out', 'other'];
   const departments = ['Management', 'Finance', 'Operations', 'IT', 'HR'];
@@ -76,7 +74,7 @@ const Users = () => {
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = (user?.name?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
-                           user?.email?.toLowerCase()?.includes(searchTerm.toLowerCase()));
+                         user?.email?.toLowerCase()?.includes(searchTerm.toLowerCase()));
     const matchesRole = !selectedRole || user.role === selectedRole;
     const matchesDepartment = !selectedDepartment || user.department === selectedDepartment;
     return matchesSearch && matchesRole && matchesDepartment;
@@ -91,7 +89,7 @@ const Users = () => {
       const userData = {
         name: userForm.fullName,
         email: userForm.email,
-        role: userForm.role, // Send the selected role directly
+        role: userForm.role,
         department: userForm.department,
         status: userForm.status,
         adminCode: userForm.role === 'admin' ? prompt('Enter admin security code:') : undefined
@@ -109,10 +107,8 @@ const Users = () => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
 
-      toast.success(`User created successfully!`);
-      
+      toast.success('User created successfully!');
       setUsers(prevUsers => [...prevUsers, data]);
-      
       setIsModalOpen(false);
       setUserForm({
         fullName: '',
@@ -138,7 +134,7 @@ const Users = () => {
     setIsModalOpen(true);
   };
 
-  const handleDeleteClick = async (user) => {
+  const handleDeleteClick = (user) => {
     setUserToDelete(user);
     setIsDeleteModalOpen(true);
   };
@@ -153,7 +149,7 @@ const Users = () => {
             'Authorization': `Bearer ${token}`
           }
         });
-        if (!response.ok) throw new Error(response.message);
+        if (!response.ok) throw new Error('Failed to delete user');
         setUsers(users.filter(user => user.id !== userToDelete.id));
         toast.success('User deleted successfully');
         setIsDeleteModalOpen(false);
@@ -183,8 +179,9 @@ const Users = () => {
       const jsonData = utils.sheet_to_json(ws);
       setUsers(jsonData);
       toast.success('Users imported successfully');
-    } catch (error) {
-      toast.error('Error importing users');
+    } catch (err) {
+      toast.error('Error importing users: ' + err.message);
+      console.error('Import error:', err);
     }
   };
 
@@ -198,17 +195,18 @@ const Users = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 max-w-full">
       <ToastContainer position="top-right" />
       
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <div className="flex items-center">
           <UsersIcon className="w-8 h-8 text-indigo-600 mr-3" />
-          <h1 className="text-3xl font-bold text-gray-800">Users Management</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Users Management</h1>
         </div>
-        <div className="flex gap-4">
-          <label className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer">
-            <Upload className="w-5 h-5 mr-2" />
+        
+        <div className="flex flex-wrap gap-2 md:gap-4">
+          <label className="flex items-center px-3 md:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer text-sm md:text-base">
+            <Upload className="w-4 h-4 md:w-5 md:h-5 mr-2" />
             Import
             <input
               type="file"
@@ -219,9 +217,9 @@ const Users = () => {
           </label>
           <button
             onClick={exportToExcel}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="flex items-center px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm md:text-base"
           >
-            <Download className="w-5 h-5 mr-2" />
+            <Download className="w-4 h-4 md:w-5 md:h-5 mr-2" />
             Export
           </button>
           <button
@@ -236,15 +234,15 @@ const Users = () => {
               });
               setIsModalOpen(true);
             }}
-            className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            className="flex items-center px-3 md:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm md:text-base"
           >
-            <UserPlus className="w-5 h-5 mr-2" />
+            <UserPlus className="w-4 h-4 md:w-5 md:h-5 mr-2" />
             Add User
           </button>
         </div>
       </div>
 
-      <div className="flex gap-4 mb-6">
+      <div className="md:flex md:gap-4 mb-6 space-y-4 md:space-y-0">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
@@ -255,107 +253,120 @@ const Users = () => {
             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
-        <select
-          value={selectedRole}
-          onChange={(e) => setSelectedRole(e.target.value)}
-          className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="md:hidden w-full flex items-center justify-center px-4 py-2 bg-gray-100 rounded-lg"
         >
-          <option value="">All Roles</option>
-          {roles.map(role => (
-            <option key={role} value={role}>{role}</option>
-          ))}
-        </select>
-        <select
-          value={selectedDepartment}
-          onChange={(e) => setSelectedDepartment(e.target.value)}
-          className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          <option value="">All Departments</option>
-          {departments.map(dept => (
-            <option key={dept} value={dept}>{dept}</option>
-          ))}
-        </select>
+          <Menu className="w-5 h-5 mr-2" />
+          Filters
+        </button>
+        
+        <div className={`flex flex-col md:flex-row gap-4 ${showFilters ? 'block' : 'hidden md:flex'}`}>
+          <select
+            value={selectedRole}
+            onChange={(e) => setSelectedRole(e.target.value)}
+            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="">All Roles</option>
+            {roles.map(role => (
+              <option key={role} value={role}>{role}</option>
+            ))}
+          </select>
+          <select
+            value={selectedDepartment}
+            onChange={(e) => setSelectedDepartment(e.target.value)}
+            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="">All Departments</option>
+            {departments.map(dept => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredUsers.map((user) => (
-              <tr key={user.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10">
-                      <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                        <User className="h-6 w-6 text-indigo-600" />
+      <div className="bg-white rounded-lg shadow-lg overflow-x-auto">
+        <div className="min-w-full">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+                <th className="px-4 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredUsers.map((user) => (
+                <tr key={user.id}>
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-8 w-8 md:h-10 md:w-10">
+                        <div className="h-full w-full rounded-full bg-indigo-100 flex items-center justify-center">
+                          <User className="h-4 w-4 md:h-6 md:w-6 text-indigo-600" />
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm md:text-base font-medium text-gray-900">{user.name}</div>
+                        <div className="text-xs md:text-sm text-gray-500">{user.email}</div>
                       </div>
                     </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                      <div className="text-sm text-gray-500">{user.email}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                    user.role === 'cashier_in' ? 'bg-blue-100 text-blue-800' :
-                    user.role === 'cashier_out' ? 'bg-green-100 text-green-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {user.role.replace('_', ' ')}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.department}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    user.status === 'active' ? 'bg-green-100 text-green-800' :
-                    user.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {user.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => handleEditUser(user)}
-                    className="text-indigo-600 hover:text-indigo-900 mr-4"
-                  >
-                    <Edit className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(user)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </td>
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                      user.role === 'cashier_in' ? 'bg-blue-100 text-blue-800' :
+                      user.role === 'cashier_out' ? 'bg-green-100 text-green-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {user.role.replace('_', ' ')}
+                    </span>
+                  </td>
+                  <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.department}</td>
+                  <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      user.status === 'active' ? 'bg-green-100 text-green-800' :
+                      user.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {user.status}
+                    </span>
+                  </td>
+                  <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}
+                  </td>
+                  <td className="px-4 md:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => handleEditUser(user)}
+                      className="text-indigo-600 hover:text-indigo-900 mr-2 md:mr-4"
+                    >
+                      <Edit className="w-4 h-4 md:w-5 md:h-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(user)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <Modal
         isOpen={isModalOpen}
         onRequestClose={() => setIsModalOpen(false)}
-        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-8 w-full max-w-md"
+        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-4 md:p-8 w-[95%] md:w-full max-w-md mx-4"
         overlayClassName="fixed inset-0 bg-black bg-opacity-50"
       >
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">{selectedUser ? 'Edit User' : 'Add New User'}</h2>
+          <h2 className="text-xl md:text-2xl font-bold">{selectedUser ? 'Edit User' : 'Add New User'}</h2>
           <button
             onClick={() => setIsModalOpen(false)}
             className="text-gray-500 hover:text-gray-700"
@@ -403,10 +414,9 @@ const Users = () => {
                 onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                <option value="admin">Admin</option>
-                <option value="cashier_in">Cashier In</option>
-                <option value="cashier_out">Cashier Out</option>
-                <option value="other">Other</option>
+                {roles.map(role => (
+                  <option key={role} value={role}>{role.replace('_', ' ')}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -468,13 +478,13 @@ const Users = () => {
       <Modal
         isOpen={isDeleteModalOpen}
         onRequestClose={() => setIsDeleteModalOpen(false)}
-        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-8 w-full max-w-md"
+        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-4 md:p-8 w-[95%] md:w-full max-w-md mx-4"
         overlayClassName="fixed inset-0 bg-black bg-opacity-50"
       >
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Confirm Delete</h2>
+          <h2 className="text-xl md:text-2xl font-bold mb-4">Confirm Delete</h2>
           <p className="mb-6">
-            Are you sure you want to delete user "{userToDelete?.fullName}"? This action cannot be undone.
+            Are you sure you want to delete user "{userToDelete?.name}"? This action cannot be undone.
           </p>
           <div className="flex justify-center gap-4">
             <button

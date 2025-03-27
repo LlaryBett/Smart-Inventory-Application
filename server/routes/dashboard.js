@@ -1,9 +1,9 @@
 const express = require('express');
 const { getDashboardData } = require('../controllers/dashboardController');
-const { authenticateToken } = require('../middleware/authMiddleware');
+const { authenticate } = require('../middleware/authMiddleware');
+
 const router = express.Router();
 
-// Protect the route with authentication
-router.get('/dashboard-data', authenticateToken, getDashboardData);
+router.get('/dashboard-data', authenticate, getDashboardData);
 
 module.exports = router;

@@ -1,4 +1,6 @@
+const mongoose = require('mongoose');
 const Sale = require('../models/Sale');
+const Product = require('../models/Product');
 const { v4: uuidv4 } = require('uuid'); // Use UUID for unique IDs
 
 // Get all sales with metrics
@@ -9,8 +11,8 @@ exports.getSales = async (req, res) => {
     
     if (searchTerm) {
       query.$or = [
-        { 'products.name': { $regex: searchTerm, $options: 'i' } },
-        { customer: { $regex: searchTerm, $options: 'i' } },
+        { 'products.productName': { $regex: searchTerm, $options: 'i' } },
+        { customerName: { $regex: searchTerm, $options: 'i' } },
         { salesPerson: { $regex: searchTerm, $options: 'i' } }
       ];
     }
@@ -26,7 +28,11 @@ exports.getSales = async (req, res) => {
       };
     }
 
-    const sales = await Sale.find(query).sort({ date: -1 });
+    // Populate all necessary fields
+    const sales = await Sale.find(query)
+      .sort({ date: -1 })
+      .populate('products.product', 'name category price cost stock') // Populate product details
+      .populate('salesPerson', 'name email role'); // Populate salesPerson details
 
     res.json({ sales }); // Send the full sales data
   } catch (error) {
@@ -37,67 +43,116 @@ exports.getSales = async (req, res) => {
 // Create sale
 exports.createSale = async (req, res) => {
   try {
-    console.log('Incoming request body:', req.body); // Log the incoming payload for debugging
+    const { products, customerName, paymentMethod, notes } = req.body;
+    const saleId = `SALE-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
 
-    const {
-      products,
-      customer,
-      paymentMethod,
-      salesPerson,
-      notes,
-      date,
-    } = req.body;
+    // First validate all products and check stock
+    const validatedProducts = [];
+    
+    for (const item of products) {
+      // Fetch product and log initial stock
+      const product = await Product.findById(item.product);
+      console.log(`Before sale - Product: ${product.name}, Initial stock: ${product.stock}`);
 
-    // Validate required fields
-    if (!products || products.length === 0) {
-      return res.status(400).json({ message: 'Products array is required and cannot be empty.' });
-    }
-
-    if (!customer) {
-      return res.status(400).json({ message: 'Customer is required.' });
-    }
-
-    if (!salesPerson) {
-      return res.status(400).json({ message: 'Sales person is required.' });
-    }
-
-    // Validate and calculate fields for each product
-    const validatedProducts = products.map((product) => {
-      if (!product.name || !product.quantity || !product.price || !product.costPrice || !product.category) {
-        throw new Error('Each product must include name, quantity, price, costPrice, and category.');
+      if (!product) {
+        throw new Error(`Product ${item.product} not found`);
       }
 
-      return {
-        ...product,
-        totalAmount: product.quantity * product.price,
-        profit: product.quantity * (product.price - product.costPrice),
-      };
+      // Check stock availability
+      if (product.stock < item.quantity) {
+        throw new Error(
+          `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`
+        );
+      }
+
+      // Calculate new stock
+      const newStock = product.stock - item.quantity;
+      console.log(`Calculating new stock: ${product.stock} - ${item.quantity} = ${newStock}`);
+
+      // Update product stock
+      await Product.findByIdAndUpdate(
+        product._id,
+        { stock: newStock },
+        { new: true }
+      );
+
+      console.log(`After update - Product: ${product.name}, New stock: ${newStock}`);
+
+      validatedProducts.push({
+        product: product._id,
+        productName: product.name,
+        category: product.category,
+        quantity: item.quantity,
+        unitPrice: product.price,
+        costPrice: product.cost,
+        unitCost: {
+          base: product.cost,
+          shipping: item.unitCost?.shipping || 0,
+          storage: item.unitCost?.storage || 0,
+          labor: item.unitCost?.labor || 0,
+          overhead: item.unitCost?.overhead || 0,
+          total: product.cost + (item.unitCost?.shipping || 0) + (item.unitCost?.storage || 0) + (item.unitCost?.labor || 0) + (item.unitCost?.overhead || 0),
+        }
+      });
+    }
+
+    // Calculate totals
+    const totalAmount = validatedProducts.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const totalProfit = validatedProducts.reduce((sum, item) => sum + (item.quantity * (item.unitPrice - item.costPrice)), 0);
+
+    // Create and save the sale
+    const sale = new Sale({
+      id: saleId,
+      products: validatedProducts,
+      customerName,
+      paymentMethod,
+      salesPerson: req.user._id,
+      totalAmount,
+      profit: totalProfit,
+      notes,
     });
 
-    // Calculate totalAmount and profit for the sale
-    const totalAmount = validatedProducts.reduce((acc, p) => acc + p.totalAmount, 0);
-    const profit = validatedProducts.reduce((acc, p) => acc + p.profit, 0);
-
-    // Create sale object
-    const saleData = {
-      id: `SALE-${Date.now()}`, // Generate ID in the format SALE-<timestamp>
-      products: validatedProducts,
-      customer,
-      paymentMethod,
-      salesPerson,
-      notes,
-      totalAmount,
-      profit,
-      date: date || new Date(),
-    };
-
-    const sale = new Sale(saleData);
     await sale.save();
 
-    res.status(201).json(sale);
+    // Verify final stock levels
+    for (const item of validatedProducts) {
+      const updatedProduct = await Product.findById(item.product);
+      console.log(`Final verification - Product: ${updatedProduct.name}, Final stock: ${updatedProduct.stock}`);
+    }
+
+    // Populate response data
+    await sale.populate('products.product salesPerson');
+
+    res.status(201).json({
+      message: 'Sale created successfully',
+      sale,
+    });
   } catch (error) {
-    console.error('Error creating sale:', error.message); // Log the error for debugging
-    res.status(400).json({ message: error.message });
+    console.error('Sale creation error:', error);
+    res.status(400).json({
+      message: 'Error creating sale',
+      error: error.message,
+    });
+  }
+};
+
+// Get a single sale by ID
+exports.getSaleById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the sale by ID and populate necessary fields
+    const sale = await Sale.findOne({ id })
+      .populate('products.product', 'name category price cost stock') // Populate product details
+      .populate('salesPerson', 'name email role'); // Populate salesPerson details
+
+    if (!sale) {
+      return res.status(404).json({ message: 'Sale not found' });
+    }
+
+    res.json({ sale });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 

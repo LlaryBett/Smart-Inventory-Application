@@ -21,7 +21,7 @@ import 'jspdf-autotable';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-function App() {
+function Reports() {
   const [dateRange, setDateRange] = useState('7d');
   const [salesReport, setSalesReport] = useState(null);
   const [inventoryReport, setInventoryReport] = useState(null);
@@ -35,7 +35,6 @@ function App() {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
 
-        // Fetch Sales Report
         const salesResponse = await fetch('http://localhost:5000/api/reports', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -46,7 +45,8 @@ function App() {
         setOrderReport(allReportsData.orderReport);
         setUserActivityReport(allReportsData.userActivityReport);
 
-      } catch (error) {
+      } catch {
+        console.error("Error fetching sales data:");
         toast.error('Failed to fetch reports data');
       } finally {
         setIsLoading(false);
@@ -62,7 +62,6 @@ function App() {
     try {
       const wb = utils.book_new();
 
-      // Summary Sheet
       const summaryData = [
         ['Metric', 'Value'],
         ['Revenue', salesReport?.totalRevenue || 0],
@@ -73,25 +72,21 @@ function App() {
       const summaryWs = utils.aoa_to_sheet(summaryData);
       utils.book_append_sheet(wb, summaryWs, 'Summary');
 
-      // Sales Sheet
       if (salesReport?.sales?.length) {
         const salesWs = utils.json_to_sheet(salesReport.sales);
         utils.book_append_sheet(wb, salesWs, 'Sales');
       }
 
-      // Orders Sheet
       if (orderReport?.orders?.length) {
         const ordersWs = utils.json_to_sheet(orderReport.orders);
         utils.book_append_sheet(wb, ordersWs, 'Orders');
       }
 
-      // Inventory Sheet
       if (inventoryReport?.inventoryReport?.length) {
         const inventoryWs = utils.json_to_sheet(inventoryReport.inventoryReport);
         utils.book_append_sheet(wb, inventoryWs, 'Inventory');
       }
 
-      // User Activity Sheet
       if (userActivityReport?.userActivity?.length) {
         const userActivityWs = utils.json_to_sheet(userActivityReport.userActivity);
         utils.book_append_sheet(wb, userActivityWs, 'User Activity');
@@ -99,7 +94,7 @@ function App() {
 
       writeFile(wb, `business-report-${new Date().toISOString().split('T')[0]}.xlsx`);
       toast.success('Excel report downloaded successfully');
-    } catch (error) {
+    } catch {
       toast.error('Failed to export Excel report');
     }
   };
@@ -109,12 +104,10 @@ function App() {
       const doc = new jsPDF();
       let yPos = 20;
 
-      // Title
       doc.setFontSize(20);
       doc.text('Business Report', 14, yPos);
       yPos += 15;
 
-      // Summary Section
       doc.setFontSize(16);
       doc.text('Summary', 14, yPos);
       yPos += 10;
@@ -133,7 +126,6 @@ function App() {
 
       yPos = doc.autoTable.previous.finalY + 15;
 
-      // Orders Section
       if (orderReport?.orders?.length) {
         doc.addPage();
         doc.setFontSize(16);
@@ -152,7 +144,6 @@ function App() {
         });
       }
 
-      // Inventory Section
       if (inventoryReport?.inventoryReport?.length) {
         doc.addPage();
         doc.setFontSize(16);
@@ -169,7 +160,6 @@ function App() {
         });
       }
 
-      // User Activity Section
       if (userActivityReport?.userActivity?.length) {
         doc.addPage();
         doc.setFontSize(16);
@@ -222,20 +212,17 @@ function App() {
     }
   };
 
-  // Prepare inventory chart data
   const inventoryChartData = inventoryReport?.inventoryReport?.map((item) => ({
     name: item.productId,
     stockLevel: item.stockLevel,
   })) || [];
 
-   // Prepare orders chart data
-   const ordersChartData = [
+  const ordersChartData = [
     { name: 'Completed', value: orderReport?.totalOrders || 0 },
     { name: 'Pending', value: 0 },
     { name: 'Cancelled', value: 0 },
   ];
 
-  // Prepare sales chart data
   const salesChartData = salesReport?.sales?.map((sale) => ({
     name: sale.productName,
     amount: sale.totalAmount,
@@ -252,39 +239,38 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <ToastContainer position="top-right" />
-      {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h1 className="text-2xl font-bold text-gray-900">Business Reports</h1>
-            <div className="flex space-x-4">
+            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <select 
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
-                className="bg-white border border-gray-300 rounded-md shadow-sm px-4 py-2 text-sm font-medium text-gray-700"
+                className="bg-white border border-gray-300 rounded-md shadow-sm px-4 py-2 text-sm font-medium text-gray-700 w-full sm:w-auto"
               >
                 <option value="7d">Last 7 days</option>
                 <option value="30d">Last 30 days</option>
                 <option value="90d">Last 90 days</option>
               </select>
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap gap-2">
                 <button 
                   onClick={exportToExcel} 
-                  className="flex items-center px-3 py-2 bg-green-600 text-white rounded-md shadow-sm text-sm font-medium hover:bg-green-700 transition-colors"
+                  className="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
                 >
                   <FileSpreadsheet className="h-4 w-4 mr-1" />
                   Excel
                 </button>
                 <button 
                   onClick={exportToPDF} 
-                  className="flex items-center px-3 py-2 bg-red-600 text-white rounded-md shadow-sm text-sm font-medium hover:bg-red-700 transition-colors"
+                  className="inline-flex items-center px-3 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
                 >
                   <FilePdf className="h-4 w-4 mr-1" />
                   PDF
                 </button>
                 <button 
                   onClick={exportToJSON} 
-                  className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-md shadow-sm text-sm font-medium hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
                 >
                   <FileJson className="h-4 w-4 mr-1" />
                   JSON
@@ -296,124 +282,146 @@ function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <DollarSign className="h-6 w-6 text-green-500" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Revenue</dt>
-                    <dd className="text-lg font-semibold text-gray-900">ksh {salesReport?.totalRevenue?.toLocaleString() || 0}</dd>
-                  </dl>
-                </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center">
+              <DollarSign className="h-6 w-6 text-green-500 flex-shrink-0" />
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-500">Total Revenue</p>
+                <p className="text-lg font-semibold text-gray-900">ksh {salesReport?.totalRevenue?.toLocaleString() || 0}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <BarChart3 className="h-6 w-6 text-blue-500" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Orders</dt>
-                    <dd className="text-lg font-semibold text-gray-900">{orderReport?.totalOrders || 0}</dd>
-                  </dl>
-                </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center">
+              <BarChart3 className="h-6 w-6 text-blue-500 flex-shrink-0" />
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-500">Total Orders</p>
+                <p className="text-lg font-semibold text-gray-900">{orderReport?.totalOrders || 0}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <TrendingUp className="h-6 w-6 text-green-500" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Net Profit</dt>
-                    <dd className="text-lg font-semibold text-green-600">ksh {salesReport?.totalProfit?.toLocaleString() || 0}</dd>
-                  </dl>
-                </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center">
+              <TrendingUp className="h-6 w-6 text-green-500 flex-shrink-0" />
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-500">Net Profit</p>
+                <p className="text-lg font-semibold text-green-600">ksh {salesReport?.totalProfit?.toLocaleString() || 0}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <TrendingDown className="h-6 w-6 text-red-500" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Order Value</dt>
-                    <dd className="text-lg font-semibold text-gray-900">ksh {orderReport?.totalOrderValue?.toLocaleString() || 0}</dd>
-                  </dl>
-                </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center">
+              <TrendingDown className="h-6 w-6 text-red-500 flex-shrink-0" />
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-500">Total Order Value</p>
+                <p className="text-lg font-semibold text-gray-900">ksh {orderReport?.totalOrderValue?.toLocaleString() || 0}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Revenue & Profit Chart */}
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-white rounded-lg shadow p-4">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Revenue & Profit Overview</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={salesReport?.sales || []}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Area 
-                  type="monotone" 
-                  dataKey="totalAmount" 
-                  stackId="1" 
-                  stroke="#8884d8" 
-                  fill="#8884d8" 
-                  fillOpacity={0.3}
-                  name="Revenue"
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="profit" 
-                  stackId="2" 
-                  stroke="#82ca9d" 
-                  fill="#82ca9d" 
-                  fillOpacity={0.3}
-                  name="Profit"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer>
+                <AreaChart data={salesReport?.sales || []} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Area type="monotone" dataKey="totalAmount" name="Revenue" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
+                  <Area type="monotone" dataKey="profit" name="Profit" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.3} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          {/* Orders Donut Chart */}
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-white rounded-lg shadow p-4">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Orders Overview</h3>
-            <ResponsiveContainer width="100%" height={300}>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={ordersChartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {ordersChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Top Products</h3>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer>
+                <BarChart data={salesReport?.sales || []} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="productName" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" interval={0} height={60} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Bar dataKey="totalAmount" name="Revenue" fill="#8884d8" />
+                  <Bar dataKey="quantity" name="Sales" fill="#82ca9d" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Sales Overview</h3>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer>
+                <BarChart data={salesChartData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" interval={0} height={60} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Bar dataKey="amount" name="Sales Amount" fill="#82ca9d" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-4 mb-8">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Inventory Levels</h3>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer>
               <PieChart>
                 <Pie
-                  data={ordersChartData}
+                  data={inventoryChartData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={50}
+                  innerRadius={60}
                   outerRadius={80}
+                  fill="#8884d8"
                   paddingAngle={5}
-                  dataKey="value"
+                  dataKey="stockLevel"
                   nameKey="name"
                   label={({ name, value }) => `${name} (${value})`}
                 >
-                  {ordersChartData.map((entry, index) => (
+                  {inventoryChartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -424,127 +432,71 @@ function App() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-8">
-          {/* Top Products */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Top Products</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={salesReport?.sales || []}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="productName" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="totalAmount" name="Revenue" fill="#8884d8" />
-                <Bar dataKey="quantity" name="Sales" fill="#82ca9d" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Sales Chart */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Sales Overview</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={salesChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="amount" name="Sales Amount" fill="#82ca9d" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Inventory - Donut Chart */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Inventory Levels</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={inventoryChartData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={80}
-                fill="#8884d8"
-                paddingAngle={5}
-                dataKey="stockLevel"
-                nameKey="name"
-                label={({ name, value }) => `${name} (${value})`}
-              >
-                {inventoryChartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-         {/* Recent Transactions */}
-         <div className="bg-white shadow rounded-lg p-6">
+        <div className="bg-white rounded-lg shadow p-4 mb-8">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Transactions</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr>
-                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                  <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {orderReport?.orders?.map((transaction) => (
-                  <tr key={transaction.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{transaction.createdAt}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{transaction.customerName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">
-                      ksh {transaction.totalAmount.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        transaction.status === 'completed' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {transaction.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8">
+            <div className="inline-block min-w-full align-middle">
+              <div className="overflow-hidden shadow-sm">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                      <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {orderReport?.orders?.map((transaction) => (
+                      <tr key={transaction.id}>
+                        <td className="px-4 py-3 text-sm text-gray-900">{transaction.createdAt}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{transaction.customerName}</td>
+                        <td className="px-4 py-3 text-sm text-right text-gray-900">ksh {transaction.totalAmount.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            transaction.status === 'completed' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {transaction.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* User Activity */}
-        <div className="bg-white shadow rounded-lg p-6">
+        <div className="bg-white rounded-lg shadow p-4">
           <h3 className="text-lg font-medium text-gray-900 mb-4">User Activity</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr>
-                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</th>
-                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {userActivityReport?.userActivity?.map((user) => (
-                  <tr key={user.userId}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.userId}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.lastLogin}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8">
+            <div className="inline-block min-w-full align-middle">
+              <div className="overflow-hidden shadow-sm">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {userActivityReport?.userActivity?.map((user) => (
+                      <tr key={user.userId}>
+                        <td className="px-4 py-3 text-sm text-gray-900">{user.userId}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{user.name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{user.email}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{user.lastLogin}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -552,4 +504,4 @@ function App() {
   );
 }
 
-export default App;
+export default Reports;

@@ -15,22 +15,31 @@ const reportRoutes = require('./routes/reports');
 const userRoutes = require('./routes/users');
 const settingsRoutes = require('./routes/settings');
 const dashboardRoutes = require('./routes/dashboard');
+const eventRoutes = require('./routes/eventRoutes');
 
 // Import middleware
 const { authenticateToken } = require('./middleware/permissions');
+const { authenticate } = require('./middleware/authMiddleware');
 
 // Configure environment variables
 dotenv.config();
 
 const app = express();
 
+// Middleware to log all incoming requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
 // CORS configuration
 app.use(cors({
   origin: 'http://localhost:5173', // Replace with your frontend URL
-  credentials: true
+  credentials: true,
+  exposedHeaders: ['Authorization']
 }));
 
-// Body parser middleware
+// Updated middleware order
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -86,17 +95,18 @@ process.on('SIGINT', async () => {
   }
 });
 
-// Routes
+// Routes - remove authenticate from route definitions since it's in the route files
 app.use('/api/auth', authRoutes); // Authentication routes
-app.use('/api/products', productRoutes); // Remove authenticateToken from here since it's in the routes
-app.use('/api/orders', authenticateToken, orderRoutes); // Order routes
-app.use('/api/sales', authenticateToken, salesRoutes); // Sales routes
-app.use('/api/purchases', authenticateToken, purchaseRoutes); // Purchase routes
+app.use('/api/products', productRoutes); // Product routes
+app.use('/api/orders', orderRoutes); // Order routes
+app.use('/api/sales', salesRoutes); // Sales routes
+app.use('/api/purchases', purchaseRoutes); // Purchase routes
 app.use('/api/services', serviceRoutes); // Services routes (GET is public)
-app.use('/api/reports', authenticateToken, reportRoutes); // Reports routes
-app.use('/api/users', authenticateToken, userRoutes); // User routes
-app.use('/api/settings', authenticateToken, settingsRoutes); // Settings routes
-app.use('/api/dashboard', dashboardRoutes); // Ensure this is correctly connected
+app.use('/api/reports', reportRoutes); // Reports routes
+app.use('/api/users', userRoutes); // User routes
+app.use('/api/settings', settingsRoutes); // Settings routes
+app.use('/api/dashboard', dashboardRoutes); // Dashboard routes
+app.use('/api/events', eventRoutes); // Event routes
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {

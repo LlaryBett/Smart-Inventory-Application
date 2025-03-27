@@ -44,8 +44,8 @@ const Services = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const categories = Array.from(new Set(services.map(service => service.category)));
-  const totalRevenue = services.reduce((sum, service) => sum + (service.price * service.requestCount), 0);
-
+  // Remove totalRevenue calculation as it's now handled by the backend
+  
   const filteredServices = services.filter(service => {
     const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.description.toLowerCase().includes(searchTerm.toLowerCase());
