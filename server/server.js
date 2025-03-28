@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const { scheduleEventNotifications } = require('./utils/scheduler'); // Import scheduler
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -16,10 +17,7 @@ const userRoutes = require('./routes/users');
 const settingsRoutes = require('./routes/settings');
 const dashboardRoutes = require('./routes/dashboard');
 const eventRoutes = require('./routes/eventRoutes');
-
-// Import middleware
-const { authenticateToken } = require('./middleware/permissions');
-const { authenticate } = require('./middleware/authMiddleware');
+const calendarRoutes = require('./routes/calendarRoutes'); // Calendar routes
 
 // Configure environment variables
 dotenv.config();
@@ -111,6 +109,13 @@ app.use('/api/users', userRoutes); // User routes
 app.use('/api/settings', settingsRoutes); // Settings routes
 app.use('/api/dashboard', dashboardRoutes); // Dashboard routes
 app.use('/api/events', eventRoutes); // Event routes
+app.use('/api/calendar', calendarRoutes); // Calendar routes
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err.stack);
+  res.status(500).json({ message: 'Something went wrong!' });
+});
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
@@ -120,14 +125,8 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Error:', err.stack);
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    return res.status(400).json({ message: 'Invalid JSON payload' });
-  }
-  res.status(500).json({ message: 'Something broke!' });
-});
+// Start the scheduler when the server starts
+scheduleEventNotifications();
 
 // Start server
 const PORT = process.env.PORT || 5000;

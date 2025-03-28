@@ -31,7 +31,7 @@ function Calendar() {
     const fetchEvents = async () => {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        const response = await axios.get('https://smart-inventory-application-1.onrender.com/api/calendar/events', {
+        const response = await axios.get('https://smart-inventory-application-1.onrender.com/api/events', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -87,29 +87,26 @@ function Calendar() {
 
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      const response = await axios.post('https://smart-inventory-application-1.onrender.com/api/calendar/events', 
+      const response = await axios.post('https://smart-inventory-application-1.onrender.com/api/events', 
         {
           ...newEvent,
-          date: selectedDate.toISOString() // Send date in ISO format
+          date: selectedDate.toISOString(), // Send date in ISO format
         },
         {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
         }
       );
 
       setEvents([...events, response.data]);
       setNewEvent({ title: '', description: '', time: '', type: 'inventory' });
       setIsModalOpen(false);
-      toast.success('Event created successfully!'); // Use react-toastify
+      toast.success('Event created successfully!');
     } catch (error) {
       console.error('Error creating event:', error);
-      if (error.response && error.response.status === 403) {
-        toast.error('Unauthorized: Only admins can add events.');
-      } else {
-        toast.error('Failed to create event. Please try again.');
-      }
+      toast.error('Failed to create event. Please try again.');
     }
   };
 
