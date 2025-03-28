@@ -63,8 +63,9 @@ export const AuthProvider = ({ children }) => {
     try {
       const decoded = jwtDecode(token);
       
-      // Store token in both sessionStorage and state
+      // Store token and user in both sessionStorage and state
       sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', JSON.stringify(decoded));
       
       setUser({ ...decoded, token });
       setIsAuthenticated(true);
@@ -72,8 +73,14 @@ export const AuthProvider = ({ children }) => {
       // Debug logs
       console.log('Token stored:', token);
       console.log('User state updated:', decoded);
+      console.log('Is first login:', isFirstLogin);
 
-      if (callback) callback();
+      if (isFirstLogin && role !== 'admin') {
+        sessionStorage.setItem('tempToken', token);
+        if (callback) callback('/change-password');
+      } else {
+        if (callback) callback('/dashboard');
+      }
     } catch (error) {
       console.error('Signin error:', error);
       toast.error('Authentication failed');

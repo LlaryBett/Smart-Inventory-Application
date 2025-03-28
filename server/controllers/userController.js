@@ -65,10 +65,9 @@ exports.createUser = async (req, res) => {
       }
     }
 
-    // Generate secure temporary password
-    const tempPassword = crypto.randomBytes(12).toString('hex') + 
-                        'A1!' + // Ensure password requirements are met
-                        crypto.randomBytes(4).toString('hex');
+    // Generate a 6-character temporary password (4 random alphanumeric + A!)
+    const randomPart = Math.random().toString(36).substring(2, 6);
+    const tempPassword = `${randomPart}A!`;
 
     const user = new User({
       id: `USER-${Date.now()}`, // Ensure ID is generated
@@ -157,7 +156,10 @@ exports.resetPassword = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const tempPassword = Math.random().toString(36).slice(-8);
+    // Generate a 6-character temporary password (4 random alphanumeric + A!)
+    const randomPart = Math.random().toString(36).substring(2, 6);
+    const tempPassword = `${randomPart}A!`;
+
     user.password = tempPassword;
     user.isFirstLogin = true;
     await user.save();

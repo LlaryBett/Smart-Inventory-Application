@@ -38,6 +38,40 @@ exports.sendWelcomeEmail = async (user, tempPassword) => {
   }
 };
 
+exports.sendLowStockAlert = async (product) => {
+  const url = 'https://api.brevo.com/v3/smtp/email';
+  
+  const data = {
+    sender: {
+      name: process.env.SENDER_NAME,
+      email: process.env.SENDER_EMAIL
+    },
+    to: [{ email: process.env.ADMIN_EMAIL }],
+    subject: 'Low Stock Alert',
+    htmlContent: `
+      <h1>Low Stock Alert</h1>
+      <p>Product: ${product.name}</p>
+      <p>Current Stock: ${product.stock}</p>
+      <p>Please reorder soon.</p>
+    `
+  };
+
+  try {
+    const response = await axios.post(url, data, {
+      headers: {
+        'api-key': process.env.BREVO_API_KEY,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+    console.log('Low stock alert sent successfully:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error sending low stock alert:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
 exports.sendPasswordResetEmail = async (user, tempPassword) => {
   const url = 'https://api.brevo.com/v3/smtp/email';
 
