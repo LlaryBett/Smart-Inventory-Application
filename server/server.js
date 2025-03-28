@@ -34,9 +34,13 @@ app.use((req, res, next) => {
 
 // CORS configuration
 app.use(cors({
-  origin: 'http://localhost:5173', // Replace with your frontend URL
+  origin: [
+    'http://localhost:5173',
+    'https://smart-inventory-application.vercel.app'
+  ],
   credentials: true,
-  exposedHeaders: ['Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Updated middleware order
