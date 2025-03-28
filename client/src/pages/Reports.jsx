@@ -230,7 +230,7 @@ function Reports() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>
     );
@@ -239,15 +239,15 @@ function Reports() {
   return (
     <div className="min-h-screen bg-gray-50">
       <ToastContainer position="top-right" />
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h1 className="text-2xl font-bold text-gray-900">Business Reports</h1>
-            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+      <header className="bg-white shadow-sm sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-2 py-3 sm:px-4 lg:px-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Business Reports</h1>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <select 
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
-                className="bg-white border border-gray-300 rounded-md shadow-sm px-4 py-2 text-sm font-medium text-gray-700 w-full sm:w-auto"
+                className="bg-white border border-gray-300 rounded-md shadow-sm px-3 py-1.5 text-sm font-medium text-gray-700 w-full sm:w-auto"
               >
                 <option value="7d">Last 7 days</option>
                 <option value="30d">Last 30 days</option>
@@ -256,21 +256,21 @@ function Reports() {
               <div className="flex flex-wrap gap-2">
                 <button 
                   onClick={exportToExcel} 
-                  className="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
+                  className="inline-flex items-center px-2.5 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
                 >
                   <FileSpreadsheet className="h-4 w-4 mr-1" />
                   Excel
                 </button>
                 <button 
                   onClick={exportToPDF} 
-                  className="inline-flex items-center px-3 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
+                  className="inline-flex items-center px-2.5 py-1.5 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
                 >
                   <FilePdf className="h-4 w-4 mr-1" />
                   PDF
                 </button>
                 <button 
                   onClick={exportToJSON} 
-                  className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center px-2.5 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
                 >
                   <FileJson className="h-4 w-4 mr-1" />
                   JSON
@@ -281,60 +281,60 @@ function Reports() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow p-4">
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <div className="bg-white rounded-lg shadow p-3">
             <div className="flex items-center">
-              <DollarSign className="h-6 w-6 text-green-500 flex-shrink-0" />
-              <div className="ml-3">
+              <DollarSign className="h-5 w-5 text-green-500 flex-shrink-0" />
+              <div className="ml-2">
                 <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-                <p className="text-lg font-semibold text-gray-900">ksh {salesReport?.totalRevenue?.toLocaleString() || 0}</p>
+                <p className="text-base font-semibold text-gray-900">ksh {salesReport?.totalRevenue?.toLocaleString() || 0}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-lg shadow p-3">
             <div className="flex items-center">
-              <BarChart3 className="h-6 w-6 text-blue-500 flex-shrink-0" />
-              <div className="ml-3">
+              <BarChart3 className="h-5 w-5 text-blue-500 flex-shrink-0" />
+              <div className="ml-2">
                 <p className="text-sm font-medium text-gray-500">Total Orders</p>
-                <p className="text-lg font-semibold text-gray-900">{orderReport?.totalOrders || 0}</p>
+                <p className="text-base font-semibold text-gray-900">{orderReport?.totalOrders || 0}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-lg shadow p-3">
             <div className="flex items-center">
-              <TrendingUp className="h-6 w-6 text-green-500 flex-shrink-0" />
-              <div className="ml-3">
+              <TrendingUp className="h-5 w-5 text-green-500 flex-shrink-0" />
+              <div className="ml-2">
                 <p className="text-sm font-medium text-gray-500">Net Profit</p>
-                <p className="text-lg font-semibold text-green-600">ksh {salesReport?.totalProfit?.toLocaleString() || 0}</p>
+                <p className="text-base font-semibold text-green-600">ksh {salesReport?.totalProfit?.toLocaleString() || 0}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-lg shadow p-3">
             <div className="flex items-center">
-              <TrendingDown className="h-6 w-6 text-red-500 flex-shrink-0" />
-              <div className="ml-3">
+              <TrendingDown className="h-5 w-5 text-red-500 flex-shrink-0" />
+              <div className="ml-2">
                 <p className="text-sm font-medium text-gray-500">Total Order Value</p>
-                <p className="text-lg font-semibold text-gray-900">ksh {orderReport?.totalOrderValue?.toLocaleString() || 0}</p>
+                <p className="text-base font-semibold text-gray-900">ksh {orderReport?.totalOrderValue?.toLocaleString() || 0}</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Revenue & Profit Overview</h3>
-            <div className="h-[300px] w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow p-3">
+            <h3 className="text-base font-medium text-gray-900 mb-3">Revenue & Profit Overview</h3>
+            <div className="h-[200px] w-full">
               <ResponsiveContainer>
-                <AreaChart data={salesReport?.sales || []} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                <AreaChart data={salesReport?.sales || []} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
+                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Legend wrapperStyle={{ fontSize: '10px' }} />
                   <Area type="monotone" dataKey="totalAmount" name="Revenue" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
                   <Area type="monotone" dataKey="profit" name="Profit" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.3} />
                 </AreaChart>
@@ -342,17 +342,17 @@ function Reports() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Orders Overview</h3>
-            <div className="h-[300px] w-full">
+          <div className="bg-white rounded-lg shadow p-3">
+            <h3 className="text-base font-medium text-gray-900 mb-3">Orders Overview</h3>
+            <div className="h-[200px] w-full">
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
                     data={ordersChartData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
+                    innerRadius={40}
+                    outerRadius={60}
                     fill="#8884d8"
                     paddingAngle={5}
                     dataKey="value"
@@ -362,24 +362,24 @@ function Reports() {
                     ))}
                   </Pie>
                   <Tooltip />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: '10px' }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Top Products</h3>
-            <div className="h-[300px] w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow p-3">
+            <h3 className="text-base font-medium text-gray-900 mb-3">Top Products</h3>
+            <div className="h-[200px] w-full">
               <ResponsiveContainer>
-                <BarChart data={salesReport?.sales || []} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                <BarChart data={salesReport?.sales || []} margin={{ top: 5, right: 5, left: -20, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="productName" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" interval={0} height={60} />
-                  <YAxis tick={{ fontSize: 12 }} />
+                  <XAxis dataKey="productName" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" interval={0} height={40} />
+                  <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Legend wrapperStyle={{ fontSize: '10px' }} />
                   <Bar dataKey="totalAmount" name="Revenue" fill="#8884d8" />
                   <Bar dataKey="quantity" name="Sales" fill="#82ca9d" />
                 </BarChart>
@@ -387,16 +387,16 @@ function Reports() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Sales Overview</h3>
-            <div className="h-[300px] w-full">
+          <div className="bg-white rounded-lg shadow p-3">
+            <h3 className="text-base font-medium text-gray-900 mb-3">Sales Overview</h3>
+            <div className="h-[200px] w-full">
               <ResponsiveContainer>
-                <BarChart data={salesChartData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                <BarChart data={salesChartData} margin={{ top: 5, right: 5, left: -20, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} angle={-45} textAnchor="end" interval={0} height={60} />
-                  <YAxis tick={{ fontSize: 12 }} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" interval={0} height={40} />
+                  <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Legend wrapperStyle={{ fontSize: '10px' }} />
                   <Bar dataKey="amount" name="Sales Amount" fill="#82ca9d" />
                 </BarChart>
               </ResponsiveContainer>
@@ -404,17 +404,17 @@ function Reports() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-4 mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Inventory Levels</h3>
-          <div className="h-[300px] w-full">
+        <div className="bg-white rounded-lg shadow p-3 mb-6">
+          <h3 className="text-base font-medium text-gray-900 mb-3">Inventory Levels</h3>
+          <div className="h-[200px] w-full">
             <ResponsiveContainer>
               <PieChart>
                 <Pie
                   data={inventoryChartData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
+                  innerRadius={40}
+                  outerRadius={60}
                   fill="#8884d8"
                   paddingAngle={5}
                   dataKey="stockLevel"
@@ -426,77 +426,69 @@ function Reports() {
                   ))}
                 </Pie>
                 <Tooltip />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: '10px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-4 mb-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Transactions</h3>
-          <div className="overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8">
-            <div className="inline-block min-w-full align-middle">
-              <div className="overflow-hidden shadow-sm">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                      <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {orderReport?.orders?.map((transaction) => (
-                      <tr key={transaction.id}>
-                        <td className="px-4 py-3 text-sm text-gray-900">{transaction.createdAt}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{transaction.customerName}</td>
-                        <td className="px-4 py-3 text-sm text-right text-gray-900">ksh {transaction.totalAmount.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            transaction.status === 'completed' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {transaction.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+        <div className="bg-white rounded-lg shadow p-3 mb-6">
+          <h3 className="text-base font-medium text-gray-900 mb-3">Recent Transactions</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                  <th scope="col" className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {orderReport?.orders?.map((transaction) => (
+                  <tr key={transaction.id}>
+                    <td className="px-3 py-2 text-sm text-gray-900 whitespace-nowrap">{transaction.createdAt}</td>
+                    <td className="px-3 py-2 text-sm text-gray-500">{transaction.customerName}</td>
+                    <td className="px-3 py-2 text-sm text-right text-gray-900 whitespace-nowrap">ksh {transaction.totalAmount.toLocaleString()}</td>
+                    <td className="px-3 py-2 text-sm">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        transaction.status === 'completed' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {transaction.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">User Activity</h3>
-          <div className="overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8">
-            <div className="inline-block min-w-full align-middle">
-              <div className="overflow-hidden shadow-sm">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</th>
-                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                      <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {userActivityReport?.userActivity?.map((user) => (
-                      <tr key={user.userId}>
-                        <td className="px-4 py-3 text-sm text-gray-900">{user.userId}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{user.name}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{user.email}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{user.lastLogin}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+        <div className="bg-white rounded-lg shadow p-3">
+          <h3 className="text-base font-medium text-gray-900 mb-3">User Activity</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</th>
+                  <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {userActivityReport?.userActivity?.map((user) => (
+                  <tr key={user.userId}>
+                    <td className="px-3 py-2 text-sm text-gray-900">{user.userId}</td>
+                    <td className="px-3 py-2 text-sm text-gray-500">{user.name}</td>
+                    <td className="px-3 py-2 text-sm text-gray-500">{user.email}</td>
+                    <td className="px-3 py-2 text-sm text-gray-500 whitespace-nowrap">{user.lastLogin}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </main>

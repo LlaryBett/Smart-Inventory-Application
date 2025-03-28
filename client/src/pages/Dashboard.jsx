@@ -36,7 +36,7 @@ const Dashboard = () => {
   const [topProducts, setTopProducts] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [analyticsMetadata, setAnalyticsMetadata] = useState(null);
-  
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -135,23 +135,39 @@ const Dashboard = () => {
 
   const renderProductAnalytics = () => (
     <div className="mt-8">
-      <h2 className="text-2xl font-bold mb-6">Product Performance Analytics</h2>
+      <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Product Performance Analytics</h2>
       
-      {/* Sales Performance Chart */}
-      <div className="bg-white p-6 rounded-lg shadow mb-6">
-        <h3 className="text-lg font-semibold mb-4">Sales Performance</h3>
-        <div className="h-[400px] w-full">
+      <div className="bg-white p-4 md:p-6 rounded-lg shadow mb-6">
+        <h3 className="text-base md:text-lg font-semibold mb-4">Sales Performance</h3>
+        <div className="h-[300px] md:h-[400px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={salesPerformanceData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" angle={-45} textAnchor="end" height={70} />
-              <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-              <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+              <XAxis 
+                dataKey="name" 
+                angle={-45} 
+                textAnchor="end" 
+                height={70}
+                interval={0}
+                tick={{ fontSize: 12 }}
+              />
+              <YAxis 
+                yAxisId="left" 
+                orientation="left" 
+                stroke="#8884d8"
+                tick={{ fontSize: 12 }}
+              />
+              <YAxis 
+                yAxisId="right" 
+                orientation="right" 
+                stroke="#82ca9d"
+                tick={{ fontSize: 12 }}
+              />
               <Tooltip />
-              <Legend />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
               <Bar yAxisId="left" dataKey="Sales" fill="#8884d8" />
               <Bar yAxisId="right" dataKey="Revenue" fill="#82ca9d" />
               <Bar yAxisId="right" dataKey="Profit" fill="#ffc658" />
@@ -160,21 +176,20 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Top Products Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Top Performing Products</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow">
+          <h3 className="text-base md:text-lg font-semibold mb-4">Top Performing Products</h3>
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead>
-                <tr className="text-left text-sm font-medium text-gray-500">
+                <tr className="text-left text-xs md:text-sm font-medium text-gray-500">
                   <th className="pb-2">Product</th>
                   <th className="pb-2">Sales</th>
                   <th className="pb-2">Revenue</th>
                   <th className="pb-2">Profit</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="text-xs md:text-sm">
                 {topProducts.slice(0, 5).map((product) => (
                   <tr key={product._id} className="border-t">
                     <td className="py-2">{product.name}</td>
@@ -192,18 +207,17 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Recommendations Section */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Stock Recommendations</h3>
-          <div className="space-y-4">
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow">
+          <h3 className="text-base md:text-lg font-semibold mb-4">Stock Recommendations</h3>
+          <div className="space-y-4 overflow-y-auto max-h-[400px]">
             {recommendations.slice(0, 5).map((rec) => (
               <div key={rec.id} className="border-b pb-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-medium">{rec.name}</h4>
-                    <p className="text-sm text-gray-600">{rec.reason}</p>
+                    <h4 className="font-medium text-sm md:text-base">{rec.name}</h4>
+                    <p className="text-xs md:text-sm text-gray-600">{rec.reason}</p>
                   </div>
-                  <span className={`px-2 py-1 rounded text-sm font-medium ${
+                  <span className={`px-2 py-1 rounded text-xs md:text-sm font-medium ${
                     rec.action === 'INCREASE_STOCK' ? 'bg-green-100 text-green-800' :
                     rec.action === 'REDUCE_STOCK' ? 'bg-red-100 text-red-800' :
                     'bg-gray-100 text-gray-800'
@@ -211,7 +225,7 @@ const Dashboard = () => {
                     {rec.action}
                   </span>
                 </div>
-                <div className="mt-2 grid grid-cols-3 gap-4 text-sm">
+                <div className="mt-2 grid grid-cols-3 gap-2 md:gap-4 text-xs md:text-sm">
                   <div>
                     <p className="text-gray-500">Current Stock</p>
                     <p className="font-medium">{rec.metrics.currentStock}</p>
@@ -231,9 +245,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Analytics Metadata */}
       {analyticsMetadata && (
-        <div className="text-sm text-gray-500 mt-4">
+        <div className="text-xs md:text-sm text-gray-500 mt-4">
           Analysis period: {analyticsMetadata.periodAnalyzed} | 
           Products analyzed: {analyticsMetadata.totalProductsAnalyzed} | 
           Last updated: {new Date(analyticsMetadata.lastUpdated).toLocaleString()}
@@ -243,18 +256,18 @@ const Dashboard = () => {
   );
 
   return (
-    <div className="h-screen bg-gray-50 p-2 md:p-8 overflow-y-auto">
+    <div className="min-h-screen bg-gray-50 p-2 md:p-6 overflow-y-auto">
       <ToastContainer />
       <div className="max-w-7xl mx-auto space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
           <div>
             <h1 className="text-xl md:text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-sm text-gray-600">Welcome to the dashboard!</p>
+            <p className="text-xs md:text-sm text-gray-600">Welcome to the dashboard!</p>
           </div>
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="bg-white border border-gray-300 rounded-lg px-2 py-1 text-sm"
+            className="w-full md:w-auto bg-white border border-gray-300 rounded-lg px-2 py-1 text-sm"
           >
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
@@ -262,53 +275,57 @@ const Dashboard = () => {
           </select>
         </div>
 
-        {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
-          <div className="bg-green-100 p-2 md:p-4 rounded-lg shadow">
-            <h3 className="text-xs md:text-lg font-semibold text-gray-800">Total Profits</h3>
-            <p className="text-green-500 font-bold text-sm md:text-xl">
+          <div className="bg-green-100 p-3 md:p-4 rounded-lg shadow">
+            <h3 className="text-xs md:text-base font-semibold text-gray-800">Total Profits</h3>
+            <p className="text-green-500 font-bold text-sm md:text-lg">
               ↑ {data.revenueData?.profitPercentage.toFixed(2) ?? 0}%
-              <span className="block text-xs md:text-base">
+              <span className="block text-xs">
                 (ksh.{data.revenueData?.profit.toFixed(2) ?? 0})
               </span>
             </p>
           </div>
-          <div className="bg-red-100 p-2 md:p-4 rounded-lg shadow">
-            <h3 className="text-xs md:text-lg font-semibold text-gray-800">Total Loss</h3>
-            <p className="text-red-500 font-bold text-sm md:text-xl">
+          <div className="bg-red-100 p-3 md:p-4 rounded-lg shadow">
+            <h3 className="text-xs md:text-base font-semibold text-gray-800">Total Loss</h3>
+            <p className="text-red-500 font-bold text-sm md:text-lg">
               ↓ {data.expensesData?.lossPercentage.toFixed(2) ?? 0}%
-              <span className="block text-xs md:text-base">
+              <span className="block text-xs">
                 (ksh.{data.expensesData?.loss.toFixed(2) ?? 0})
               </span>
             </p>
           </div>
-          <div className="bg-blue-100 p-2 md:p-4 rounded-lg shadow">
-            <h3 className="text-xs md:text-lg font-semibold text-gray-800">Total Spent</h3>
-            <p className="text-sm md:text-xl">
+          <div className="bg-blue-100 p-3 md:p-4 rounded-lg shadow">
+            <h3 className="text-xs md:text-base font-semibold text-gray-800">Total Spent</h3>
+            <p className="text-sm md:text-lg">
               ksh.{data.expensesData?.totalExpenses.toFixed(2) ?? 0}
             </p>
           </div>
-          <div className="bg-yellow-100 p-2 md:p-4 rounded-lg shadow">
-            <h3 className="text-xs md:text-lg font-semibold text-gray-800">Net Revenue</h3>
-            <p className="text-sm md:text-xl">
+          <div className="bg-yellow-100 p-3 md:p-4 rounded-lg shadow">
+            <h3 className="text-xs md:text-base font-semibold text-gray-800">Net Revenue</h3>
+            <p className="text-sm md:text-lg">
               Ksh{data.revenueData?.netRevenue.toFixed(2) ?? 0}
             </p>
           </div>
         </div>
 
-        {/* Charts Grid */}
-        <div className="grid md:grid-cols-2 gap-2 md:gap-4">
-          <div className="bg-white p-2 md:p-4 rounded-lg shadow">
-            <h2 className="text-sm md:text-xl font-semibold mb-2">Sales Overview</h2>
-            <div className="h-[150px] md:h-[300px]">
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-base md:text-lg font-semibold mb-4">Sales Overview</h2>
+            <div className="h-[200px] md:h-[300px]">
               <Line 
                 data={salesChartConfig}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
                   scales: {
-                    y: { beginAtZero: true },
-                    x: { display: false }
+                    y: { 
+                      beginAtZero: true,
+                      ticks: { font: { size: 10 } }
+                    },
+                    x: { 
+                      display: false,
+                      ticks: { font: { size: 10 } }
+                    }
                   },
                   plugins: {
                     legend: { display: false }
@@ -318,9 +335,9 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white p-2 md:p-4 rounded-lg shadow">
-            <h2 className="text-sm md:text-xl font-semibold mb-2">Orders Summary</h2>
-            <div className="h-[150px] md:h-[300px]">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-base md:text-lg font-semibold mb-4">Orders Summary</h2>
+            <div className="h-[200px] md:h-[300px]">
               <Doughnut 
                 data={ordersChartConfig}
                 options={{
@@ -329,7 +346,11 @@ const Dashboard = () => {
                   plugins: {
                     legend: {
                       position: 'right',
-                      labels: { boxWidth: 10, font: { size: 10 } }
+                      labels: { 
+                        boxWidth: 10, 
+                        font: { size: 10 },
+                        padding: 10
+                      }
                     }
                   }
                 }}
@@ -337,9 +358,9 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white p-2 md:p-4 rounded-lg shadow">
-            <h2 className="text-sm md:text-xl font-semibold mb-2">Revenue vs Expenses</h2>
-            <div className="h-[150px] md:h-[300px]">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-base md:text-lg font-semibold mb-4">Revenue vs Expenses</h2>
+            <div className="h-[200px] md:h-[300px]">
               <Doughnut 
                 data={revenueExpensesChartConfig}
                 options={{
@@ -348,7 +369,11 @@ const Dashboard = () => {
                   plugins: {
                     legend: {
                       position: 'right',
-                      labels: { boxWidth: 10, font: { size: 10 } }
+                      labels: { 
+                        boxWidth: 10, 
+                        font: { size: 10 },
+                        padding: 10
+                      }
                     }
                   }
                 }}
@@ -356,13 +381,13 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white p-2 md:p-4 rounded-lg shadow">
-            <h2 className="text-sm md:text-xl font-semibold mb-2">Low Stock Products</h2>
-            <div className="h-[150px] md:h-[300px] overflow-y-auto">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-base md:text-lg font-semibold mb-4">Low Stock Products</h2>
+            <div className="h-[200px] md:h-[300px] overflow-y-auto">
               {data.lowStockProducts?.length > 0 ? (
-                <ul className="list-disc pl-4 text-xs md:text-sm">
+                <ul className="list-disc pl-4 text-xs md:text-sm space-y-2">
                   {data.lowStockProducts?.map((product) => (
-                    <li key={product.id} className="text-red-500 mb-1">
+                    <li key={product.id} className="text-red-500">
                       {product.name} - {product.stock} left
                     </li>
                   ))}
@@ -374,9 +399,8 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Transactions */}
-        <div className="bg-white p-2 md:p-4 rounded-lg shadow">
-          <h2 className="text-sm md:text-xl font-semibold mb-2">Recent Transactions</h2>
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h2 className="text-base md:text-lg font-semibold mb-4">Recent Transactions</h2>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -406,7 +430,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Product Analytics */}
         {renderProductAnalytics()}
       </div>
     </div>
