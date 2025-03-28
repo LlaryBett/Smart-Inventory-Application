@@ -32,7 +32,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// CORS configuration
+// CORS configuration to allow both urls
 app.use(cors({
   origin: [
     'http://localhost:5173',
