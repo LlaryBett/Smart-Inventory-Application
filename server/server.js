@@ -12,7 +12,7 @@ const orderRoutes = require('./routes/orders');
 const salesRoutes = require('./routes/sales');
 const purchaseRoutes = require('./routes/purchases');
 const serviceRoutes = require('./routes/services');
-const reportRoutes = require('./routes/reports');
+const reportRoutes = require('./routes/reportRoutes'); // Updated report routes import
 const userRoutes = require('./routes/users');
 const settingsRoutes = require('./routes/settings');
 const dashboardRoutes = require('./routes/dashboard');
@@ -46,31 +46,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // MongoDB connection with detailed error handling
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000 // 5 second timeout
-})
-.then(() => {
-  console.log('Connected to MongoDB Atlas');
-})
-.catch((err) => {
-  console.error('MongoDB connection error details:', {
-    name: err.name,
-    message: err.message,
-    code: err.code
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log('Connected to MongoDB Atlas');
+  })
+  .catch((error) => {
+    console.error('MongoDB connection error:', error);
   });
-  console.log('\nPossible solutions:');
-  console.log('1. Whitelist your IP address in MongoDB Atlas');
-  console.log('2. Check if your MongoDB Atlas username and password are correct');
-  console.log('3. Verify your connection string format');
-  console.log('\nTo whitelist your IP:');
-  console.log('1. Go to MongoDB Atlas dashboard');
-  console.log('2. Click Network Access');
-  console.log('3. Click Add IP Address');
-  console.log('4. Add your current IP or use 0.0.0.0/0 for all IPs (not recommended for production)');
-  process.exit(1);
-});
 
 // Add error handling for MongoDB connection
 mongoose.connection.on('connected', () => {

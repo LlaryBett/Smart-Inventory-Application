@@ -1,6 +1,7 @@
 const Product = require('../models/Product');
 const Sale = require('../models/Sale');
 const PredictiveAnalytics = require('../services/predictiveAnalytics');
+const Inventory = require('../models/Inventory');
 
 exports.getProducts = async (req, res) => {
   try {
@@ -18,6 +19,15 @@ exports.createProduct = async (req, res) => {
   try {
     const product = new Product(req.body);
     await product.save();
+
+    // Create inventory record for the new product
+    const inventory = new Inventory({
+      productId: product._id,
+      stockLevel: req.body.stock || 0,
+      minimumStock: req.body.minimumStock || 10
+    });
+    await inventory.save();
+
     res.status(201).json(product);
   } catch (error) {
     console.error('Error creating product:', error);

@@ -41,7 +41,15 @@ exports.getUsers = async (req, res) => {
 
 exports.createUser = async (req, res) => {
   try {
-    const { name, email, role, adminCode } = req.body;
+    const { fullName, email, role, department, adminCode } = req.body;
+
+    // Check if email already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({
+        message: 'An account with this email already exists'
+      });
+    }
 
     // Verify admin is creating the user
     if (req.user.role !== 'admin') {
@@ -70,12 +78,19 @@ exports.createUser = async (req, res) => {
     const tempPassword = `${randomPart}A!`;
 
     const user = new User({
-      id: `USER-${Date.now()}`, // Ensure ID is generated
-      name,
+      id: `USER-${Date.now()}`,
+      name: fullName,  // Map fullName to name
       email,
       password: tempPassword,
       role,
+      department: department || 'Other',
       createdBy: req.user._id
+    });
+
+    console.log('Creating user with data:', { 
+      name: user.name,
+      email: user.email,
+      role: user.role 
     });
 
     await user.save();
@@ -100,6 +115,13 @@ exports.createUser = async (req, res) => {
       }
     });
   } catch (error) {
+    // Check for duplicate key error explicitly
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message: 'An account with this email already exists'
+      });
+    }
+    console.error('User creation error:', error);
     res.status(400).json({ 
       message: error.message,
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
@@ -110,25 +132,53 @@ exports.createUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = { ...req.body, updatedAt: new Date() };
-    
-    if (updates.password) {
-      updates.password = await bcrypt.hash(updates.password, 10);
-    }
+    const { fullName, email, role, department, status } = req.body;
 
-    const user = await User.findOneAndUpdate(
-      { id },
-      updates,
-      { new: true }
-    ).select('-password');
+    console.log('Updating user:', { id, updateData: req.body });
 
+    // First find the user to update
+    const user = await User.findOne({ id });
     if (!user) {
+      console.log('User not found:', id);
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json(user);
+    // Check if email is being changed and if it's already in use
+    if (email !== user.email) {
+      const emailExists = await User.findOne({ 
+        email, 
+        _id: { $ne: user._id } 
+      });
+      
+      if (emailExists) {
+        return res.status(400).json({ 
+          message: 'Email already in use by another user' 
+        });
+      }
+    }
+
+    // Update user fields
+    user.name = fullName;
+    user.email = email;
+    user.role = role;
+    user.department = department;
+    user.status = status;
+
+    // Save the updated user
+    await user.save();
+    
+    // Return updated user without password
+    const updatedUser = user.toObject();
+    delete updatedUser.password;
+    
+    console.log('User updated successfully:', updatedUser);
+    res.json(updatedUser);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Update error:', error);
+    res.status(400).json({ 
+      message: 'Failed to update user',
+      error: error.message 
+    });
   }
 };
 

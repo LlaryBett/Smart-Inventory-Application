@@ -93,36 +93,60 @@ const Users = () => {
     return matchesSearch && matchesRole && matchesDepartment;
   });
 
-  const handleAddUser = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
       const token = sessionStorage.getItem("token") || localStorage.getItem("token");
-      
       const userData = {
-        name: userForm.fullName,
+        fullName: userForm.fullName,
         email: userForm.email,
         role: userForm.role,
         department: userForm.department,
-        status: userForm.status,
-        adminCode: userForm.role === 'admin' ? prompt('Enter admin security code:') : undefined
+        status: userForm.status
       };
 
-      const response = await fetch('https://smart-inventory-application-1.onrender.com/api/users', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(userData),
-      });
+      if (selectedUser) {
+        // Update existing user
+        const response = await fetch(`https://smart-inventory-application-1.onrender.com/api/users/${selectedUser.id}`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(userData)
+        });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
 
-      toast.success('User created successfully!');
-      setUsers(prevUsers => [...prevUsers, data]);
+        setUsers(prevUsers => prevUsers.map(user => 
+          user.id === selectedUser.id ? data : user
+        ));
+        toast.success('User updated successfully!');
+      } else {
+        // Create new user
+        const response = await fetch('https://smart-inventory-application-1.onrender.com/api/users', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            ...userData,
+            adminCode: userData.role === 'admin' ? prompt('Enter admin security code:') : undefined
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+        
+        setUsers(prevUsers => [...prevUsers, data]);
+        toast.success('User created successfully!');
+      }
+
       setIsModalOpen(false);
+      setSelectedUser(null);
       setUserForm({
         fullName: '',
         email: '',
@@ -514,7 +538,7 @@ const Users = () => {
               </div>
             )}
             <button
-              onClick={handleAddUser}
+              onClick={handleSubmit}
               className="w-full flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
             >
               <Save className="w-4 h-4 mr-2" />

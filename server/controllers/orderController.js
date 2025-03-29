@@ -1,10 +1,10 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const Sale = require('../models/Sale');
 
 // Get all orders
 exports.getOrders = async (req, res) => {
   try {
-    // Add metrics calculation
     const orders = await Order.find();
     const metrics = {
       totalRevenue: orders.reduce((acc, order) => 
@@ -13,10 +13,9 @@ exports.getOrders = async (req, res) => {
       completedOrders: orders.filter(order => order.status === 'completed').length
     };
 
-    // Handle search and filtering
     const { searchTerm, status } = req.query;
     let filteredOrders = orders;
-    
+
     if (searchTerm) {
       filteredOrders = filteredOrders.filter(order =>
         order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -24,7 +23,7 @@ exports.getOrders = async (req, res) => {
         order.id.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     if (status && status !== 'all') {
       filteredOrders = filteredOrders.filter(order => order.status === status);
     }
@@ -49,39 +48,37 @@ exports.getOrderById = async (req, res) => {
 // Create a new order
 exports.createOrder = async (req, res) => {
   try {
-    const {
-      customerName,
-      customerEmail,
-      status,
-      items,
-      totalAmount,
-      shippingAddress,
-      paymentMethod,
-      notes
-    } = req.body;
+    const { productId, quantity, status, ...orderData } = req.body; // Extract status from request
 
-    // Validate required fields
-    if (!customerName || !customerEmail || !totalAmount || !shippingAddress) {
-      return res.status(400).json({ message: 'Missing required fields' });
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
     }
 
+    const totalAmount = product.price * quantity;
+
     const order = new Order({
-      customerName,
-      customerEmail,
-      status: status || 'pending',
-      items: items || 1,
+      ...orderData,
+      productId,
+      quantity,
+      items: quantity,
       totalAmount,
-      createdAt: new Date(),
-      shippingAddress,
-      paymentMethod: paymentMethod || 'credit_card',
-      notes: notes || ''
+      productName: product.name,
+      pricePerUnit: product.price,
+      status: status || 'pending' // Use provided status or default to pending
+    });
+
+    console.log('Creating order with payload:', {
+      quantity,
+      status,
+      totalAmount,
+      productName: product.name
     });
 
     const savedOrder = await order.save();
     res.status(201).json(savedOrder);
   } catch (error) {
-    console.error('Create order error:', error);
-    res.status(500).json({ message: 'Error creating order' });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -90,7 +87,7 @@ exports.updateOrder = async (req, res) => {
   try {
     const { id } = req.params;
     const updatedOrder = await Order.findOneAndUpdate(
-      { id }, // Changed from { id: id }
+      { id },
       req.body,
       { new: true, runValidators: true }
     );
@@ -101,11 +98,73 @@ exports.updateOrder = async (req, res) => {
   }
 };
 
+// Update order status
+exports.updateOrderStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const userId = req.user.userId;
+    const userName = req.user.email; // Use email as fallback for salesPerson
+
+    console.log('Updating order status:', { orderId: id, newStatus: status, userId, userName });
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    const oldStatus = order.status;
+    order.status = status;
+
+    const product = await Product.findById(order.productId);
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    if (status === 'completed' && oldStatus !== 'completed') {
+      console.log('Creating sale for completed order');
+      const sale = new Sale({
+        id: `SALE-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        products: [{
+          product: order.productId,
+          productName: order.productName,
+          category: product.category,
+          quantity: order.quantity,
+          unitPrice: order.pricePerUnit,
+          costPrice: product.cost,
+          unitCost: {
+            base: product.cost
+          }
+        }],
+        customerName: order.customerName,
+        totalAmount: order.totalAmount,
+        paymentMethod: order.paymentMethod,
+        salesPerson: userName,
+        notes: order.notes || '',
+        date: new Date()
+      });
+
+      await sale.save();
+      console.log('Sale created successfully:', sale);
+
+      // Update product stock
+      product.stock = Math.max(0, product.stock - order.quantity);
+      await product.save();
+    }
+
+    await order.save();
+    res.json(order);
+  } catch (error) {
+    console.error('Order status update error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Delete an order
 exports.deleteOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const deletedOrder = await Order.findOneAndDelete({ id }); // Changed from { id: id }
+    const deletedOrder = await Order.findOneAndDelete({ id });
     if (!deletedOrder) return res.status(404).json({ message: 'Order not found' });
     res.status(204).send();
   } catch (error) {
@@ -113,7 +172,7 @@ exports.deleteOrder = async (req, res) => {
   }
 };
 
-// Add Excel import/export functionality
+// Import orders
 exports.importOrders = async (req, res) => {
   try {
     const orders = req.body;

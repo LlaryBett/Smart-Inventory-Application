@@ -1,111 +1,102 @@
 const Order = require('../models/Order');
 const Sale = require('../models/Sale');
 const Inventory = require('../models/Inventory');
+const Product = require('../models/Product');
 const User = require('../models/User');
 
-// Get sales report
-exports.getSalesReport = async (req, res) => {
+exports.getAllReports = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
-    const query = {};
+    // Get orders with status counts
+    const orders = await Order.find().sort({ createdAt: -1 });
+    const orderStatusCounts = {
+      completed: orders.filter(order => order.status === 'completed').length,
+      pending: orders.filter(order => order.status === 'pending').length,
+      processing: orders.filter(order => order.status === 'processing').length,
+      cancelled: orders.filter(order => order.status === 'cancelled').length
+    };
 
-    if (startDate && endDate) {
-      query.date = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
-    }
-
-    const sales = await Sale.find(query).populate('products.product', 'name price');
-    const totalRevenue = sales.reduce((acc, sale) => acc + sale.total, 0);
-    const totalProfit = sales.reduce((acc, sale) => acc + (sale.total - sale.cost), 0);
-
-    res.json({
-      totalRevenue,
-      totalProfit,
-      sales: sales.map(sale => ({
-        id: sale._id,
-        date: sale.date,
-        total: sale.total,
-        products: sale.products.map(p => ({
-          name: p.product.name,
-          price: p.price,
-          quantity: p.quantity
-        }))
-      }))
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Get inventory report
-exports.getInventoryReport = async (req, res) => {
-  try {
-    const inventory = await Inventory.find().populate('productId', 'name');
-    res.json({
-      inventoryReport: inventory.map(item => ({
-        productId: item.productId._id,
-        productName: item.productId.name,
-        stockLevel: item.stockLevel
-      }))
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Get order report
-exports.getOrderReport = async (req, res) => {
-  try {
-    const { startDate, endDate } = req.query;
-    const query = {};
-
-    if (startDate && endDate) {
-      query.date = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
-    }
-
-    const orders = await Order.find(query).populate('products.product', 'name price');
-    const totalOrders = orders.length;
-    const totalOrderValue = orders.reduce((acc, order) => acc + order.total, 0);
-
-    res.json({
-      totalOrders,
-      totalOrderValue,
+    // Calculate order metrics
+    const orderReport = {
+      totalOrders: orders.length,
+      totalOrderValue: orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0),
+      statusCounts: orderStatusCounts,
       orders: orders.map(order => ({
-        id: order._id,
-        date: order.date,
+        id: order.id,
         customerName: order.customerName,
-        total: order.total,
+        totalAmount: order.totalAmount,
         status: order.status,
-        products: order.products.map(p => ({
-          name: p.product.name,
-          price: p.price,
-          quantity: p.quantity
-        }))
+        createdAt: order.createdAt
       }))
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+    };
 
-// Get user activity report
-exports.getUserActivityReport = async (req, res) => {
-  try {
+    // Get sales data
+    const sales = await Sale.find().sort({ date: -1 });
+    const salesReport = {
+      totalRevenue: sales.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0),
+      totalProfit: sales.reduce((sum, sale) => sum + (sale.profit || 0), 0),
+      sales: sales.map(sale => ({
+        date: sale.date,
+        productName: sale.productName,
+        totalAmount: sale.totalAmount,
+        profit: sale.profit,
+        quantity: sale.quantity
+      }))
+    };
+
+    // Get all products with their stock levels
+    const products = await Product.find().lean();
+
+    // Create inventory report directly from products
+    const inventoryReport = {
+      inventoryReport: products.map(product => ({
+        productId: product._id,
+        productName: product.name,
+        category: product.category,
+        price: product.price,
+        stockLevel: product.stock, // Use stock directly from product
+        minimumStock: 10,
+        location: 'Main Warehouse',
+        status: product.stock <= 10 ? 'Low Stock' : 'In Stock'
+      })),
+      metrics: {
+        totalProducts: products.length,
+        lowStockItems: products.filter(p => p.stock <= 10).length,
+        totalValue: products.reduce((sum, product) => sum + (product.price * product.stock), 0)
+      }
+    };
+
+    console.log('Generated Inventory Report:', inventoryReport);
+
+    // Get user activity
     const users = await User.find();
-    res.json({
+    const userActivityReport = {
       userActivity: users.map(user => ({
         userId: user._id,
         name: user.name,
         email: user.email,
         lastLogin: user.lastLogin || 'Never'
       }))
+    };
+
+    console.log('Generated Reports:', {
+      orderReport,
+      salesReport,
+      inventoryReport,
+      userActivityReport
     });
+
+    res.json({
+      orderReport,
+      salesReport,
+      inventoryReport,
+      userActivityReport
+    });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Report generation error:', error);
+    res.status(500).json({ 
+      message: 'Error generating reports',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };

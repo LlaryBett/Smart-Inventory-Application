@@ -213,15 +213,44 @@ function Reports() {
   };
 
   const inventoryChartData = inventoryReport?.inventoryReport?.map((item) => ({
-    name: item.productId,
-    stockLevel: item.stockLevel,
+    name: item.productName || 'Unknown Product',
+    value: parseInt(item.stockLevel) || 0, // Ensure we parse the value as integer
   })) || [];
 
+  // Add debug logging
+  useEffect(() => {
+    console.log('Raw inventory report:', inventoryReport);
+    console.log('Processed chart data:', inventoryChartData);
+  }, [inventoryReport]);
+
   const ordersChartData = [
-    { name: 'Completed', value: orderReport?.totalOrders || 0 },
-    { name: 'Pending', value: 0 },
-    { name: 'Cancelled', value: 0 },
+    { 
+      name: 'Completed', 
+      value: orderReport?.orders?.filter(order => order.status === 'completed').length || 0 
+    },
+    { 
+      name: 'Pending', 
+      value: orderReport?.orders?.filter(order => order.status === 'pending').length || 0 
+    },
+    { 
+      name: 'Processing', 
+      value: orderReport?.orders?.filter(order => order.status === 'processing').length || 0 
+    },
+    { 
+      name: 'Cancelled', 
+      value: orderReport?.orders?.filter(order => order.status === 'cancelled').length || 0 
+    }
   ];
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'processing': return 'bg-blue-100 text-blue-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   const salesChartData = salesReport?.sales?.map((sale) => ({
     name: sale.productName,
@@ -417,7 +446,7 @@ function Reports() {
                   outerRadius={60}
                   fill="#8884d8"
                   paddingAngle={5}
-                  dataKey="stockLevel"
+                  dataKey="value"
                   nameKey="name"
                   label={({ name, value }) => `${name} (${value})`}
                 >
@@ -451,11 +480,7 @@ function Reports() {
                     <td className="px-3 py-2 text-sm text-gray-500">{transaction.customerName}</td>
                     <td className="px-3 py-2 text-sm text-right text-gray-900 whitespace-nowrap">ksh {transaction.totalAmount.toLocaleString()}</td>
                     <td className="px-3 py-2 text-sm">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        transaction.status === 'completed' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(transaction.status)}`}>
                         {transaction.status}
                       </span>
                     </td>

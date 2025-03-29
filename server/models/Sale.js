@@ -59,9 +59,9 @@ const saleSchema = new mongoose.Schema({
     enum: ['cash', 'credit_card', 'debit_card', 'bank_transfer', 'mobile_payment']
   },
   salesPerson: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    type: String,  // Changed from ObjectId to String
+    required: true,
+    default: 'System'  // Default value for system-generated sales
   },
   notes: String,
   date: {
@@ -73,6 +73,7 @@ const saleSchema = new mongoose.Schema({
 // Pre-save middleware to calculate totals only
 saleSchema.pre('save', function (next) {
   try {
+    console.log('Pre-save middleware for sale:', this);
     let totalAmount = 0;
     let profit = 0;
 
@@ -84,8 +85,11 @@ saleSchema.pre('save', function (next) {
 
     this.totalAmount = totalAmount;
     this.profit = profit;
+    
+    console.log('Calculated totals:', { totalAmount, profit });
     next();
   } catch (error) {
+    console.error('Sale pre-save error:', error);
     next(error);
   }
 });
