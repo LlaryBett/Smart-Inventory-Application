@@ -18,7 +18,7 @@ const Sidebar = () => {
     });
   };
 
-  const NavItem = ({ to, icon: Icon, children }) => (
+  const NavItem = ({ to, icon, children }) => (
     <NavLink
       to={to}
       onClick={() => setIsMobileMenuOpen(false)}
@@ -28,7 +28,7 @@ const Sidebar = () => {
         }`
       }
     >
-      <Icon className="h-5 w-5 min-w-[20px]" />
+      {React.createElement(icon, { className: "h-5 w-5 min-w-[20px]" })}
       <span className="hidden md:block ml-2 truncate">{children}</span>
     </NavLink>
   );
