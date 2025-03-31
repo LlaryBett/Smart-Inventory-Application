@@ -3,14 +3,25 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true, trim: true, lowercase: true },
+  email: { 
+    type: String, 
+    required: true, 
+    unique: true, // Make email unique again
+    trim: true, 
+    lowercase: true
+  },
   password: { type: String, required: true },
   role: { 
     type: String, 
     enum: ['admin', 'cashier_in', 'cashier_out', 'other'], // Correct enum values
     default: 'other'
   },
-  department: { type: String, default: '' },
+  department: {
+    type: String,
+    required: true,
+    enum: ['IT', 'Sales', 'Finance', 'Operations', 'Management', 'Other'],
+    default: 'Other'
+  },
   rememberMe: { type: Boolean, default: false },
   isFirstLogin: { 
     type: Boolean, 
@@ -37,12 +48,27 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Create a non-unique index for email search performance
+userSchema.index({ email: 1 }, { unique: false });
+
 // Pre-save hook to hash the password
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next(); // Only hash if modified
   
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+// Add pre-save middleware to check email uniqueness
+userSchema.pre('save', async function(next) {
+  if (this.isModified('email')) {
+    const existingUser = await this.constructor.findOne({ email: this.email, _id: { $ne: this._id } });
+    if (existingUser) {
+      next(new Error('An account with this email already exists'));
+      return;
+    }
+  }
   next();
 });
 

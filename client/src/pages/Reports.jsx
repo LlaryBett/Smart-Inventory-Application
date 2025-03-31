@@ -27,6 +27,7 @@ function Reports() {
   const [inventoryReport, setInventoryReport] = useState(null);
   const [orderReport, setOrderReport] = useState(null);
   const [userActivityReport, setUserActivityReport] = useState(null);
+  const [recentTransactions, setRecentTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -35,7 +36,7 @@ function Reports() {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
 
-        const salesResponse = await fetch('https://smart-inventory-application-1.onrender.com/api/reports', {
+        const salesResponse = await fetch('http://localhost:5000/api/reports', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!salesResponse.ok) throw new Error('Failed to fetch reports');
@@ -44,7 +45,7 @@ function Reports() {
         setInventoryReport(allReportsData.inventoryReport);
         setOrderReport(allReportsData.orderReport);
         setUserActivityReport(allReportsData.userActivityReport);
-
+        setRecentTransactions(allReportsData.recentTransactions);
       } catch {
         console.error("Error fetching sales data:");
         toast.error('Failed to fetch reports data');
@@ -213,14 +214,15 @@ function Reports() {
   };
 
   const inventoryChartData = inventoryReport?.inventoryReport?.map((item) => ({
-    name: item.productId,
+    name: item.productName,  // Changed from productId to productName
     stockLevel: item.stockLevel,
   })) || [];
 
   const ordersChartData = [
-    { name: 'Completed', value: orderReport?.totalOrders || 0 },
-    { name: 'Pending', value: 0 },
-    { name: 'Cancelled', value: 0 },
+    { name: 'Completed', value: orderReport?.completed || 0 },
+    { name: 'Pending', value: orderReport?.pending || 0 },
+    { name: 'Processing', value: orderReport?.processing || 0 },
+    { name: 'Cancelled', value: orderReport?.cancelled || 0 }
   ];
 
   const salesChartData = salesReport?.sales?.map((sale) => ({
@@ -356,6 +358,7 @@ function Reports() {
                     fill="#8884d8"
                     paddingAngle={5}
                     dataKey="value"
+                    label={({ name, value }) => `${name}: ${value}`}
                   >
                     {ordersChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -419,7 +422,7 @@ function Reports() {
                   paddingAngle={5}
                   dataKey="stockLevel"
                   nameKey="name"
-                  label={({ name, value }) => `${name} (${value})`}
+                  label={({ name, value }) => `${name}: ${value}`}  // Updated label format
                 >
                   {inventoryChartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -445,17 +448,17 @@ function Reports() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {orderReport?.orders?.map((transaction) => (
+                {recentTransactions.map((transaction) => (
                   <tr key={transaction.id}>
-                    <td className="px-3 py-2 text-sm text-gray-900 whitespace-nowrap">{transaction.createdAt}</td>
-                    <td className="px-3 py-2 text-sm text-gray-500">{transaction.customerName}</td>
-                    <td className="px-3 py-2 text-sm text-right text-gray-900 whitespace-nowrap">ksh {transaction.totalAmount.toLocaleString()}</td>
+                    <td className="px-3 py-2 text-sm text-gray-900 whitespace-nowrap">
+                      {new Date(transaction.date).toLocaleDateString()}
+                    </td>
+                    <td className="px-3 py-2 text-sm text-gray-500">{transaction.customer}</td>
+                    <td className="px-3 py-2 text-sm text-right text-gray-900 whitespace-nowrap">
+                      ksh {transaction.amount?.toLocaleString() || 0}
+                    </td>
                     <td className="px-3 py-2 text-sm">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        transaction.status === 'completed' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                         {transaction.status}
                       </span>
                     </td>

@@ -24,6 +24,7 @@ const Login = () => {
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const authContext = useContext(AuthContext);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, type, value, checked } = e.target;
@@ -57,16 +58,27 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (isRegister) {
-      try {
+    // Prevent double submission
+    if (isSubmitting) {
+      console.log('Already submitting, ignoring...');
+      return;
+    }
+
+    setIsSubmitting(true);
+    console.log('handleSubmit called, isSubmitting set to true');
+
+    try {
+      if (isRegister) {
         // Validate admin registration
         if (!form.adminCode) {
           toast.error("Admin security code is required");
+          setIsSubmitting(false);
           return;
         }
 
         if (form.password !== form.confirmPassword) {
           toast.error("Passwords do not match");
+          setIsSubmitting(false);
           return;
         }
 
@@ -74,6 +86,7 @@ const Login = () => {
           validatePassword(form.password);
         } catch (error) {
           toast.error(error.message);
+          setIsSubmitting(false);
           return;
         }
 
@@ -94,15 +107,15 @@ const Login = () => {
 
         toast.success("Admin account created successfully!");
         setIsRegister(false);
-      } catch (error) {
-        toast.error(error.message);
-      }
-    } else {
-      try {
+      } else {
         const response = await fetch("https://smart-inventory-application-1.onrender.com/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body: JSON.stringify({
+            email: form.email,
+            password: form.password,
+            rememberMe: form.rememberMe
+          }),
         });
 
         const data = await response.json();
@@ -115,19 +128,20 @@ const Login = () => {
           console.log('First time login detected'); // Debug log
           sessionStorage.setItem('tempToken', data.token);
           setShowPasswordModal(true);
-          return; // Stop here - don't store credentials or navigate yet
+        } else {
+          const storage = form.rememberMe ? localStorage : sessionStorage;
+          storage.setItem('token', data.token);
+          storage.setItem('user', JSON.stringify(data.user));
+          
+          navigate('/dashboard');
+          toast.success("Successfully logged in!");
         }
-
-        // Normal login flow - user has already changed their password or is an admin
-        const storage = form.rememberMe ? localStorage : sessionStorage;
-        storage.setItem('token', data.token);
-        storage.setItem('user', JSON.stringify(data.user));
-        
-        navigate('/dashboard');
-        toast.success("Successfully logged in!");
-      } catch (error) {
-        toast.error(error.message);
       }
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsSubmitting(false);
+      console.log('handleSubmit finished, isSubmitting set to false');
     }
   };
 
@@ -314,9 +328,16 @@ const Login = () => {
 
           <button
             type="submit"
-            className="w-full rounded-md bg-indigo-600 py-2 px-3 text-sm font-semibold text-white hover:bg-indigo-500 focus:ring-2 focus:ring-indigo-600"
+            disabled={isSubmitting}
+            className={`w-full rounded-md py-2 px-3 text-sm font-semibold text-white 
+              ${isSubmitting 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-indigo-600 hover:bg-indigo-500'}
+              focus:ring-2 focus:ring-indigo-600`}
           >
-            {isRegister ? "Register Admin Account" : "Sign in"}
+            {isSubmitting 
+              ? 'Please wait...' 
+              : (isRegister ? "Register Admin Account" : "Sign in")}
           </button>
         </form>
 

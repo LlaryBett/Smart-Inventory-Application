@@ -1,17 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const reportsController = require('../controllers/reportController');
+const reportController = require('../controllers/reportController');
 const { authenticateToken, restrictTo } = require('../middleware/permissions');
-const { getReports } = require('../controllers/reportsController');
 
 // Protected routes (require authentication)
 router.use(authenticateToken);
 
 // Define routes
-router.get('/sales', reportsController.getSalesReport);
-router.get('/inventory', restrictTo('admin'), reportsController.getInventoryReport);
-router.get('/orders', restrictTo('admin'), reportsController.getOrderReport);
-router.get('/user-activity', restrictTo('admin'), reportsController.getUserActivityReport);
-router.get('/', authenticateToken, getReports);
+router.get('/sales', reportController.getSalesReport);
+router.get('/inventory', restrictTo('admin'), reportController.getInventoryReport);
+router.get('/orders', restrictTo('admin'), reportController.getOrderReport);
+router.get('/user-activity', restrictTo('admin'), reportController.getUserActivityReport);
+router.get('/', authenticateToken, reportController.getAllReports);
 
 module.exports = router;
