@@ -36,7 +36,7 @@ function Reports() {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
 
-        const salesResponse = await fetch('http://localhost:5000/api/reports', {
+        const salesResponse = await fetch('https://smart-inventory-application-1.onrender.com/api/reports', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!salesResponse.ok) throw new Error('Failed to fetch reports');

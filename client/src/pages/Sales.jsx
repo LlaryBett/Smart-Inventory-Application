@@ -65,7 +65,7 @@ const Sales = () => {
     const fetchProducts = async () => {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5000/api/products', {
+        const response = await axios.get('https://smart-inventory-application-1.onrender.com/api/products', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
