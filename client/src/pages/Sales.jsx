@@ -42,7 +42,7 @@ const Sales = () => {
     const fetchSales = async () => {
       try {
         const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/sales', {
+        const response = await fetch('https://smart-inventory-application-1.onrender.com/api/sales', {
           headers: {
             'Authorization': `Bearer ${token}`
           }

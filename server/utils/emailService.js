@@ -1,41 +1,30 @@
-const fetch = require('node-fetch');
-
-const sendLowStockAlert = async (products) => {
+const sendLowStockAlert = async ({ products, threshold }) => {
   try {
-    const productsList = products.map(p => 
-      `<tr>
-        <td>${p.name}</td>
-        <td>${p.stock}</td>
-        <td>${p.category}</td>
-      </tr>`
-    ).join('');
-
     const data = {
       sender: {
-        name: process.env.SENDER_NAME,
+        name: process.env.SENDER_NAME || 'Inventory System',
         email: process.env.SENDER_EMAIL
       },
-      to: [{
-        email: process.env.SENDER_EMAIL
-      }],
-      subject: 'Low Stock Alert - Multiple Products',
+      to: [{ email: process.env.ADMIN_EMAIL }],
+      subject: '⚠️ Low Stock Alert',
       htmlContent: `
-        <h2>Low Stock Alert</h2>
-        <table border="1" style="border-collapse: collapse; width: 100%;">
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Current Stock</th>
-              <th>Category</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${productsList}
-          </tbody>
-        </table>
-        <p>Please restock these items soon.</p>
+        <div style="font-family: 'Arial', sans-serif; background-color: #f4f4f4; color: #333; padding: 20px; border-radius: 10px;">
+          <h2 style="color: #e74c3c;">Low Stock Alert</h2>
+          <p>The following products are below the threshold of ${threshold} units:</p>
+          <div style="background-color: #fff; padding: 15px; border-radius: 5px; margin: 15px 0;">
+            ${products.map(p => `
+              <div style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #eee;">
+                <strong style="color: #2c3e50;">${p.name}</strong> (${p.category})<br>
+                Current stock: <span style="color: #e74c3c; font-weight: bold;">${p.stock}</span>
+              </div>
+            `).join('')}
+          </div>
+          <p style="color: #7f8c8d; margin-top: 20px;">Please take necessary action to restock these items.</p>
+        </div>
       `
     };
+
+    console.log('Sending low stock alert for', products.length, 'products');
 
     const response = await fetch('https://api.sendinblue.com/v3/smtp/email', {
       method: 'POST',
@@ -48,12 +37,15 @@ const sendLowStockAlert = async (products) => {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorData = await response.json();
+      throw new Error(`Email API error: ${response.status}, ${JSON.stringify(errorData)}`);
     }
-    
-    console.log('Low stock alert email sent successfully');
+
+    console.log('Low stock alert sent successfully');
+    return true;
   } catch (error) {
     console.error('Failed to send low stock alert:', error);
+    throw error;
   }
 };
 

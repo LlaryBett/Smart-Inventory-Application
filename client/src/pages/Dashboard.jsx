@@ -32,7 +32,6 @@ const Dashboard = () => {
     lowStockProducts: [],
     transactions: []
   });
-  const [dateRange, setDateRange] = useState("monthly");
   const [topProducts, setTopProducts] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [analyticsMetadata, setAnalyticsMetadata] = useState(null);
@@ -45,22 +44,25 @@ const Dashboard = () => {
           console.error('No token found');
           return;
         }
-
-        const response = await axios.get("https://smart-inventory-application-1.onrender.com/api/dashboard/dashboard-data", {
+        
+        const response = await axios.get("http://localhost:5000/api/dashboard/dashboard-data", {
           headers: {
             'Authorization': `Bearer ${token}`
-          },
-          params: { dateRange },
+          }
         });
         
+        console.log('Raw API response:', response.data);
         setData(response.data);
+        console.log('Updated dashboard state:', response.data);
+
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
+        toast.error("Failed to fetch dashboard data");
       }
     };
 
     fetchData();
-  }, [dateRange]);
+  }, []);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -264,15 +266,6 @@ const Dashboard = () => {
             <h1 className="text-xl md:text-3xl font-bold text-gray-900">Dashboard</h1>
             <p className="text-xs md:text-sm text-gray-600">Welcome to the dashboard!</p>
           </div>
-          <select
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            className="w-full md:w-auto bg-white border border-gray-300 rounded-lg px-2 py-1 text-sm"
-          >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
@@ -407,15 +400,21 @@ const Dashboard = () => {
                 <tr>
                   <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                   <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200 text-xs md:text-sm">
-                {data.transactions?.slice(0, 5).map((transaction) => (
+                {data.transactions?.slice(0, 10).map((transaction) => (
                   <tr key={transaction.id} className="hover:bg-gray-50">
-                    <td className="px-2 py-2 whitespace-nowrap">{transaction.id}</td>
-                    <td className="px-2 py-2 whitespace-nowrap">{transaction.user}</td>
-                    <td className="px-2 py-2 whitespace-nowrap">ksh{transaction.amount}</td>
+                    <td className="px-2 py-2 whitespace-nowrap">
+                      {transaction.id?.split('-').slice(-1)[0]}
+                    </td>
+                    <td className="px-2 py-2 whitespace-nowrap">
+                      {transaction.user || 'Anonymous'}
+                    </td>
+                    <td className="px-2 py-2 whitespace-nowrap text-right">
+                      ksh {transaction.amount?.toLocaleString()}
+                    </td>
                   </tr>
                 ))}
                 {(!data.transactions || data.transactions.length === 0) && (
