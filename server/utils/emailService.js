@@ -1,11 +1,20 @@
 const sendLowStockAlert = async ({ products, threshold }) => {
   try {
+    // Validate required environment variables
+    if (!process.env.BREVO_API_KEY || !process.env.SENDER_EMAIL) {
+      console.error('Missing required environment variables');
+      return false;
+    }
+
     const data = {
       sender: {
         name: process.env.SENDER_NAME || 'Inventory System',
         email: process.env.SENDER_EMAIL
       },
-      to: [{ email: process.env.ADMIN_EMAIL }],
+      to: [{ 
+        email: process.env.SENDER_EMAIL,  // Send to same email since it's admin
+        name: 'Admin'
+      }],
       subject: '⚠️ Low Stock Alert',
       htmlContent: `
         <div style="font-family: 'Arial', sans-serif; background-color: #f4f4f4; color: #333; padding: 20px; border-radius: 10px;">
@@ -24,7 +33,7 @@ const sendLowStockAlert = async ({ products, threshold }) => {
       `
     };
 
-    console.log('Sending low stock alert for', products.length, 'products');
+    console.log('Sending low stock alert to:', process.env.SENDER_EMAIL);
 
     const response = await fetch('https://api.sendinblue.com/v3/smtp/email', {
       method: 'POST',
@@ -45,7 +54,7 @@ const sendLowStockAlert = async ({ products, threshold }) => {
     return true;
   } catch (error) {
     console.error('Failed to send low stock alert:', error);
-    throw error;
+    return false;
   }
 };
 
