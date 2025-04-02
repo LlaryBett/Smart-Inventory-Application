@@ -89,13 +89,13 @@ orderSchema.pre('save', function(next) {
   next();
 });
 
-// Add a post-save middleware to handle stock updates and sales records
+// Update the post-save middleware to handle stock updates and sales records
 orderSchema.post('save', async function(doc) {
   try {
     const Product = require('./Product');
     const Sale = require('./Sale');
     
-    console.log('Post-save middleware triggered for order:', doc);
+    console.log('Post-save middleware triggered for order:', doc._id);
 
     const product = await Product.findById(doc.productId);
     if (!product) {
@@ -103,37 +103,13 @@ orderSchema.post('save', async function(doc) {
       return;
     }
 
-    console.log('Found product:', product);
+    console.log('Found product:', product.name);
 
-    if (doc.status === 'completed') {
-      console.log('Creating sale record for completed order');
-      const sale = new Sale({
-        id: `SALE-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-        products: [{
-          product: doc.productId,
-          productName: doc.productName,
-          category: product.category,
-          quantity: doc.quantity,
-          unitPrice: doc.pricePerUnit,
-          costPrice: product.cost,
-          unitCost: {
-            base: product.cost
-          }
-        }],
-        customerName: doc.customerName,
-        totalAmount: doc.totalAmount,
-        paymentMethod: doc.paymentMethod,
-        salesPerson: 'System',
-        date: new Date(),
-        notes: doc.notes || ''
-      });
-
-      await sale.save();
-      console.log('Sale record created:', sale);
-    }
-
+    // We'll handle sale creation in the controller instead to avoid duplication
+    // This middleware will now focus only on making sure inventory is correctly managed
+    
     // Always reduce stock for new orders regardless of status (except cancelled)
-    if (doc.status !== 'cancelled') {
+    if (doc.isNew && doc.status !== 'cancelled') {
       console.log(`Processing stock update for ${doc.status} order`);
       product.stock = Math.max(0, product.stock - doc.quantity);
       await product.save();
@@ -145,3 +121,4 @@ orderSchema.post('save', async function(doc) {
 });
 
 module.exports = mongoose.model('Order', orderSchema);
+
