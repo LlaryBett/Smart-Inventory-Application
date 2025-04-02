@@ -59,9 +59,13 @@ const saleSchema = new mongoose.Schema({
     enum: ['cash', 'credit_card', 'debit_card', 'bank_transfer', 'mobile_payment']
   },
   salesPerson: {
+    type: String,
+    required: true
+  },
+  salesPersonId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false
   },
   notes: String,
   date: {
