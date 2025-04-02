@@ -48,11 +48,18 @@ exports.getOrderById = async (req, res) => {
 // Create a new order
 exports.createOrder = async (req, res) => {
   try {
-    const { productId, quantity, status, ...orderData } = req.body; // Extract status from request
+    const { productId, quantity, status, ...orderData } = req.body;
 
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Check if there's enough inventory
+    if (product.stock < quantity && status !== 'cancelled') {
+      return res.status(400).json({ 
+        message: `Not enough inventory for product ${product.name}. Only ${product.stock} available.` 
+      });
     }
 
     const totalAmount = product.price * quantity;
@@ -65,7 +72,7 @@ exports.createOrder = async (req, res) => {
       totalAmount,
       productName: product.name,
       pricePerUnit: product.price,
-      status: status || 'pending' // Use provided status or default to pending
+      status: status || 'pending'
     });
 
     console.log('Creating order with payload:', {
@@ -76,8 +83,29 @@ exports.createOrder = async (req, res) => {
     });
 
     const savedOrder = await order.save();
+
+    // Update inventory immediately for non-cancelled orders
+    if (status !== 'cancelled') {
+      product.stock = Math.max(0, product.stock - quantity);
+      await product.save();
+      console.log(`Updated product stock: ${product.name}, New stock: ${product.stock}`);
+    }
+
+    // Create a sale immediately if the order is completed
+    if (status === 'completed') {
+      try {
+        const salesPerson = req.user?.email || 'System';
+        const salesPersonId = req.user?.userId || null;
+        await createSaleFromOrder(savedOrder, product, salesPerson, salesPersonId);
+      } catch (saleError) {
+        console.error('Failed to create sale, but order was created:', saleError);
+        // Continue processing - we don't want to fail the order just because sale creation failed
+      }
+    }
+
     res.status(201).json(savedOrder);
   } catch (error) {
+    console.error('Create order error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -103,8 +131,8 @@ exports.updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const userId = req.user.userId;
-    const userName = req.user.email; // Use email as fallback for salesPerson
+    const userId = req.user?.userId;
+    const userName = req.user?.email || 'System';
 
     console.log('Updating order status:', { orderId: id, newStatus: status, userId, userName });
 
@@ -114,6 +142,12 @@ exports.updateOrderStatus = async (req, res) => {
     }
 
     const oldStatus = order.status;
+    
+    // No change needed if status is the same
+    if (oldStatus === status) {
+      return res.json(order);
+    }
+    
     order.status = status;
 
     const product = await Product.findById(order.productId);
@@ -121,35 +155,37 @@ exports.updateOrderStatus = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    if (status === 'completed' && oldStatus !== 'completed') {
-      console.log('Creating sale for completed order');
-      const sale = new Sale({
-        id: `SALE-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-        products: [{
-          product: order.productId,
-          productName: order.productName,
-          category: product.category,
-          quantity: order.quantity,
-          unitPrice: order.pricePerUnit,
-          costPrice: product.cost,
-          unitCost: {
-            base: product.cost
-          }
-        }],
-        customerName: order.customerName,
-        totalAmount: order.totalAmount,
-        paymentMethod: order.paymentMethod,
-        salesPerson: userName,
-        notes: order.notes || '',
-        date: new Date()
-      });
-
-      await sale.save();
-      console.log('Sale created successfully:', sale);
-
-      // Update product stock
+    // Handle inventory updates for status changes
+    
+    // If order is being cancelled, return products to inventory
+    if (status === 'cancelled' && oldStatus !== 'cancelled') {
+      product.stock += order.quantity;
+      console.log(`Restored ${order.quantity} units to product ${product.name} inventory`);
+      await product.save();
+    }
+    
+    // If order was previously cancelled but now being set to active status, reduce inventory again
+    if (oldStatus === 'cancelled' && status !== 'cancelled') {
+      // Check if we have enough inventory
+      if (product.stock < order.quantity) {
+        return res.status(400).json({ 
+          message: `Not enough inventory for product ${product.name}. Only ${product.stock} available.` 
+        });
+      }
+      // Reduce the quantity from inventory
       product.stock = Math.max(0, product.stock - order.quantity);
       await product.save();
+      console.log(`Reduced ${order.quantity} units from product ${product.name} inventory`);
+    }
+
+    // Create a sale when an order is marked as completed
+    if (status === 'completed' && oldStatus !== 'completed') {
+      try {
+        await createSaleFromOrder(order, product, userName, userId);
+      } catch (saleError) {
+        console.error('Failed to create sale, but order status was updated:', saleError);
+        // Continue processing - order status update is still valid
+      }
     }
 
     await order.save();
@@ -188,3 +224,39 @@ exports.importOrders = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+// Helper function to create a sale from an order
+async function createSaleFromOrder(order, product, salesPerson, salesPersonId) {
+  try {
+    console.log('Creating sale for completed order');
+    
+    const sale = new Sale({
+      id: `SALE-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      products: [{
+        product: order.productId,
+        productName: order.productName,
+        category: product.category || 'Uncategorized',
+        quantity: order.quantity,
+        unitPrice: order.pricePerUnit,
+        costPrice: product.cost || 0,
+        unitCost: {
+          base: product.cost || 0
+        }
+      }],
+      customerName: order.customerName,
+      totalAmount: order.totalAmount,
+      paymentMethod: order.paymentMethod || 'credit_card',
+      salesPerson: salesPerson,
+      salesPersonId: salesPersonId, // This can be null if no ID provided
+      notes: order.notes || '',
+      date: new Date()
+    });
+
+    await sale.save();
+    console.log('Sale created successfully:', sale.id);
+    return sale;
+  } catch (error) {
+    console.error('Error creating sale from order:', error);
+    throw error;
+  }
+}
